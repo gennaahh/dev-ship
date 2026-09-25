@@ -11,7 +11,10 @@
         v-for="(w, i) in waves"
         :key="i"
         class="wave"
+        :class="{ front: w.z > 10 }"
         :style="{
+          '--color': w.color,
+          '--below': `${(parseFloat(w.bottom) / parseFloat(w.height)) * 100}%`,
           bottom: w.bottom,
           height: w.height,
           animationDuration: w.duration,
@@ -38,7 +41,8 @@
 </template>
 
 <script setup>
-// z-index: le onde con z > 10 passano davanti alla nave (che ha z-index 10).
+// z-index: le onde con z > 10 passano davanti alla nave (che ha z-index 10) e alla banchina,
+// e sotto di sé sono piene fino al fondo, così la banchina non si vede tra un'onda e l'altra.
 const waves = [
   { bottom: '52%', height: '9%', color: '#3f8fc4', duration: '22s', reverse: false, z: 1 },
   { bottom: '38%', height: '10%', color: '#2f7bb3', duration: '17s', reverse: true, z: 2 },
@@ -99,6 +103,16 @@ const waves = [
   width: 200%;
   display: flex;
   animation: roll linear infinite;
+}
+.wave.front::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* 1px di sovrapposizione per non lasciare una riga chiara sotto l'onda */
+  top: calc(100% - 1px);
+  height: calc(var(--below) + 1px);
+  background: var(--color);
 }
 .wave svg {
   width: 50%;
