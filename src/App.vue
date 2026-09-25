@@ -8,6 +8,7 @@ import Seagulls from './components/Seagulls.vue'
 import Kraken from './components/Kraken.vue'
 import Sharks from './components/Sharks.vue'
 import LunchScene from './components/LunchScene.vue'
+import PortScene from './components/PortScene.vue'
 import TimeSlider from './components/TimeSlider.vue'
 import { isLunchTime, minutesSinceMonday, shipPosition } from './shipPosition.js'
 
@@ -28,7 +29,12 @@ onMounted(() => {
 onUnmounted(() => clearInterval(timer))
 
 const position = computed(() => shipPosition(minutes.value))
-const lunch = computed(() => isLunchTime(minutes.value))
+// Scena ravvicinata: pranzo a bordo (ha la precedenza) oppure lavori in porto quando la nave è ormeggiata.
+const scene = computed(() => {
+  if (isLunchTime(minutes.value)) return 'lunch'
+  if (position.value.direction === 'docked') return 'port'
+  return null
+})
 
 // La nave va dalla banchina del porto (progress 0) fino a fianco della boa (progress 1).
 const shipLeft = computed(
@@ -36,7 +42,7 @@ const shipLeft = computed(
 )
 const shipStyle = computed(() => ({ left: `calc${shipLeft.value}` }))
 
-// Lo zoom della pausa pranzo punta al ponte della nave: la nave poggia all'85%
+// Lo zoom delle scene (pranzo, porto) punta al ponte della nave: la nave poggia all'85%
 // dell'altezza (30% del mare, che è la metà bassa) ed è alta circa 0.68 × larghezza.
 const worldStyle = computed(() => ({
   transformOrigin: `calc(${shipLeft.value} + var(--ship-w) / 2) calc(85% - var(--ship-w) * 0.36)`,
@@ -47,15 +53,18 @@ const status = {
   left: 'Giro di boa fatto, rientro in porto',
   docked: 'Ormeggiata in porto',
 }
-const statusText = computed(() =>
-  lunch.value
-    ? 'Pausa pranzo a bordo'
-    : `${status[position.value.direction]} · ${Math.round(position.value.progress * 100)}%`,
+const sceneStatus = {
+  lunch: 'Pausa pranzo a bordo',
+  port: 'In porto: carico merci e riparazioni',
+}
+const statusText = computed(
+  () =>
+    sceneStatus[scene.value] ?? `${status[position.value.direction]} · ${Math.round(position.value.progress * 100)}%`,
 )
 </script>
 
 <template>
-  <div class="world" :class="{ zoomed: lunch }" :style="worldStyle">
+  <div class="world" :class="{ zoomed: scene }" :style="worldStyle">
     <Sea>
       <template #sky>
         <Seagulls />
@@ -70,8 +79,9 @@ const statusText = computed(() =>
     </Sea>
   </div>
 
-  <Transition name="lunch">
-    <LunchScene v-if="lunch" />
+  <Transition name="scene" mode="out-in">
+    <LunchScene v-if="scene === 'lunch'" />
+    <PortScene v-else-if="scene === 'port'" />
   </Transition>
 
   <TimeSlider
@@ -109,8 +119,8 @@ html, body {
   transition: left 0.25s ease-out;
 }
 
-/* Pausa pranzo: zoom sulla nave, poi compare la scena del pranzo.
-   All'uscita la scena del pranzo sfuma e solo dopo parte lo zoom out. */
+/* Pausa pranzo e lavori in porto: zoom sulla nave, poi compare la scena.
+   All'uscita la scena sfuma e solo dopo parte lo zoom out. */
 .world {
   position: fixed;
   inset: 0;
@@ -121,17 +131,17 @@ html, body {
   transform: scale(6);
   transition: transform 1.4s cubic-bezier(0.6, 0, 0.8, 0.4);
 }
-.lunch-enter-active {
+.scene-enter-active {
   transition: opacity 0.7s ease 1s, transform 1.2s ease-out 1s;
 }
-.lunch-enter-from {
+.scene-enter-from {
   opacity: 0;
   transform: scale(1.2);
 }
-.lunch-leave-active {
+.scene-leave-active {
   transition: opacity 0.6s ease, transform 0.6s ease-in;
 }
-.lunch-leave-to {
+.scene-leave-to {
   opacity: 0;
   transform: scale(0.85);
 }
