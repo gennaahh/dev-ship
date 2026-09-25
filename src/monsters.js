@@ -43,3 +43,11 @@ export function isPterodactylTime(m, week) {
   const start = pterodactylStart(week)
   return m >= start && m < start + DURATION
 }
+
+// Aereo con lo striscione: il venerdì, nei primi 5 minuti di ogni ora. Come gli altri si vede
+// solo col mare aperto, quindi in pratica alle 9, 10, 11, 12, 14, 15, 16 e 17.
+const FRIDAY = 4
+
+export function isPlaneTime(m) {
+  return Math.floor(m / MINUTES_PER_DAY) === FRIDAY && m % 60 < DURATION
+}

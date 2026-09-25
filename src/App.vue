@@ -7,6 +7,7 @@ import Buoy from './components/Buoy.vue'
 import Seagulls from './components/Seagulls.vue'
 import Kraken from './components/Kraken.vue'
 import Pterodactyl from './components/Pterodactyl.vue'
+import Plane from './components/Plane.vue'
 import Poseidon from './components/Poseidon.vue'
 import Sharks from './components/Sharks.vue'
 import Weather from './components/Weather.vue'
@@ -15,7 +16,7 @@ import PortScene from './components/PortScene.vue'
 import RestScene from './components/RestScene.vue'
 import TimeSlider from './components/TimeSlider.vue'
 import { isLunchTime, isRestTime, minutesSinceMonday, shipPosition } from './shipPosition.js'
-import { isKrakenTime, isPoseidonTime, isPterodactylTime } from './monsters.js'
+import { isKrakenTime, isPlaneTime, isPoseidonTime, isPterodactylTime } from './monsters.js'
 import { weatherAt } from './weather.js'
 import { weekId } from './weekRandom.js'
 
@@ -63,6 +64,7 @@ const monsters = computed(() => ({
   kraken: !scene.value && isKrakenTime(minutes.value),
   pterodactyl: !scene.value && isPterodactylTime(minutes.value, week.value),
   poseidon: !scene.value && isPoseidonTime(minutes.value),
+  plane: !scene.value && isPlaneTime(minutes.value),
 }))
 
 // Maltempo: anche questo solo nella vista del mare aperto.
@@ -100,6 +102,7 @@ const monsterStatus = {
   kraken: 'Il Kraken è emerso!',
   pterodactyl: 'Uno pterodattilo in cielo!',
   poseidon: 'Poseidone spinge la nave verso casa',
+  plane: 'Dai che è venerdì!',
 }
 const statusText = computed(() => {
   if (scene.value) return sceneStatus[scene.value]
@@ -119,6 +122,9 @@ const statusText = computed(() => {
         <Seagulls />
         <Transition name="monster-fly">
           <Pterodactyl v-if="monsters.pterodactyl" />
+        </Transition>
+        <Transition name="monster-fly">
+          <Plane v-if="monsters.plane" />
         </Transition>
       </template>
       <Port />
