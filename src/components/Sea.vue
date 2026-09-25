@@ -4,6 +4,7 @@
     <div class="cloud c1" />
     <div class="cloud c2" />
     <div class="cloud c3" />
+    <slot name="sky" />
 
     <div class="sea">
       <div

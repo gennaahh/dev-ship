@@ -4,8 +4,12 @@ import Sea from './components/Sea.vue'
 import Ship from './components/Ship.vue'
 import Port from './components/Port.vue'
 import Buoy from './components/Buoy.vue'
+import Seagulls from './components/Seagulls.vue'
+import Kraken from './components/Kraken.vue'
+import Sharks from './components/Sharks.vue'
+import LunchScene from './components/LunchScene.vue'
 import TimeSlider from './components/TimeSlider.vue'
-import { minutesSinceMonday, shipPosition } from './shipPosition.js'
+import { isLunchTime, minutesSinceMonday, shipPosition } from './shipPosition.js'
 
 const liveMinutes = ref(minutesSinceMonday(new Date()))
 
@@ -24,10 +28,18 @@ onMounted(() => {
 onUnmounted(() => clearInterval(timer))
 
 const position = computed(() => shipPosition(minutes.value))
+const lunch = computed(() => isLunchTime(minutes.value))
 
 // La nave va dalla banchina del porto (progress 0) fino a fianco della boa (progress 1).
-const shipStyle = computed(() => ({
-  left: `calc(var(--port-w) + (100% - var(--port-w) - var(--buoy-zone) - var(--ship-w)) * ${position.value.progress})`,
+const shipLeft = computed(
+  () => `(var(--port-w) + (100% - var(--port-w) - var(--buoy-zone) - var(--ship-w)) * ${position.value.progress})`,
+)
+const shipStyle = computed(() => ({ left: `calc${shipLeft.value}` }))
+
+// Lo zoom della pausa pranzo punta al ponte della nave: la nave poggia all'85%
+// dell'altezza (30% del mare, che è la metà bassa) ed è alta circa 0.68 × larghezza.
+const worldStyle = computed(() => ({
+  transformOrigin: `calc(${shipLeft.value} + var(--ship-w) / 2) calc(85% - var(--ship-w) * 0.36)`,
 }))
 
 const status = {
@@ -35,19 +47,32 @@ const status = {
   left: 'Giro di boa fatto, rientro in porto',
   docked: 'Ormeggiata in porto',
 }
-const statusText = computed(
-  () => `${status[position.value.direction]} · ${Math.round(position.value.progress * 100)}%`,
+const statusText = computed(() =>
+  lunch.value
+    ? 'Pausa pranzo a bordo'
+    : `${status[position.value.direction]} · ${Math.round(position.value.progress * 100)}%`,
 )
 </script>
 
 <template>
-  <Sea>
-    <Port />
-    <Buoy />
-    <div class="ship-wrap" :class="{ simulating: !live }" :style="shipStyle">
-      <Ship :facing-left="position.direction === 'left'" />
-    </div>
-  </Sea>
+  <div class="world" :class="{ zoomed: lunch }" :style="worldStyle">
+    <Sea>
+      <template #sky>
+        <Seagulls />
+      </template>
+      <Port />
+      <Buoy />
+      <Kraken />
+      <Sharks />
+      <div class="ship-wrap" :class="{ simulating: !live }" :style="shipStyle">
+        <Ship :facing-left="position.direction === 'left'" />
+      </div>
+    </Sea>
+  </div>
+
+  <Transition name="lunch">
+    <LunchScene v-if="lunch" />
+  </Transition>
 
   <TimeSlider
     :minutes="minutes"
@@ -82,5 +107,32 @@ html, body {
 /* Mentre si trascina lo slider la nave segue subito, senza ritardo. */
 .ship-wrap.simulating {
   transition: left 0.25s ease-out;
+}
+
+/* Pausa pranzo: zoom sulla nave, poi compare la scena del pranzo.
+   All'uscita la scena del pranzo sfuma e solo dopo parte lo zoom out. */
+.world {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  transition: transform 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) 0.3s;
+}
+.world.zoomed {
+  transform: scale(6);
+  transition: transform 1.4s cubic-bezier(0.6, 0, 0.8, 0.4);
+}
+.lunch-enter-active {
+  transition: opacity 0.7s ease 1s, transform 1.2s ease-out 1s;
+}
+.lunch-enter-from {
+  opacity: 0;
+  transform: scale(1.2);
+}
+.lunch-leave-active {
+  transition: opacity 0.6s ease, transform 0.6s ease-in;
+}
+.lunch-leave-to {
+  opacity: 0;
+  transform: scale(0.85);
 }
 </style>

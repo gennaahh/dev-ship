@@ -29,3 +29,12 @@ export function shipPosition(m) {
   if (m <= TURN) return { progress: (m - START) / (TURN - START), direction: 'right' }
   return { progress: 1 - (m - TURN) / (END - TURN), direction: 'left' }
 }
+
+// Pausa pranzo, tutti i giorni: dalle 13:00 alle 14:00 si pranza a bordo.
+export const LUNCH_START = 13 * 60
+export const LUNCH_END = 14 * 60
+
+export function isLunchTime(m) {
+  const inDay = m % MINUTES_PER_DAY
+  return inDay >= LUNCH_START && inDay < LUNCH_END
+}
