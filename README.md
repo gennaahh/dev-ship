@@ -10,6 +10,7 @@ A small Vue 3 single page application that shows the working week as a ship's vo
 - It sails steadily to reach the **buoy** (right) on **Wednesday at 13:30**, the halfway point of the week.
 - It turns around at the buoy and gets back to port on **Friday at 18:00**.
 - Outside working hours it stays moored in port. The view zooms in on the ship for a close-up of the port at work: a crane loads containers into the hold and a worker repairs the hull.
+- While sailing, from 18:00 until work resumes at 09:00 the next morning, the view zooms in on the crew resting on deck under the stars: hammocks, a deck chair and a lantern.
 - Every day from 13:00 to 14:00 there is a lunch break on board, with the same zoom in/zoom out. Lunch wins when the ship is also in port.
 
 The position follows your local time. Use the slider at the top to simulate any moment of the week, and press "Torna all'ora attuale" to go back to live time. You can also open a given moment directly with `?at=2026-09-23T13:30`.

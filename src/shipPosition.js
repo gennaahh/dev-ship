@@ -38,3 +38,13 @@ export function isLunchTime(m) {
   const inDay = m % MINUTES_PER_DAY
   return inDay >= LUNCH_START && inDay < LUNCH_END
 }
+
+// Riposo: fuori dall'orario di lavoro (dalle 18:00 alle 09:00 del giorno dopo) l'equipaggio dorme.
+// Quando la nave è in porto vale invece la scena del porto (vedi App.vue).
+export const REST_START = 18 * 60
+export const REST_END = 9 * 60
+
+export function isRestTime(m) {
+  const inDay = m % MINUTES_PER_DAY
+  return inDay >= REST_START || inDay < REST_END
+}

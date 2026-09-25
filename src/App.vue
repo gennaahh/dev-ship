@@ -9,8 +9,9 @@ import Kraken from './components/Kraken.vue'
 import Sharks from './components/Sharks.vue'
 import LunchScene from './components/LunchScene.vue'
 import PortScene from './components/PortScene.vue'
+import RestScene from './components/RestScene.vue'
 import TimeSlider from './components/TimeSlider.vue'
-import { isLunchTime, minutesSinceMonday, shipPosition } from './shipPosition.js'
+import { isLunchTime, isRestTime, minutesSinceMonday, shipPosition } from './shipPosition.js'
 
 const liveMinutes = ref(minutesSinceMonday(new Date()))
 
@@ -29,10 +30,12 @@ onMounted(() => {
 onUnmounted(() => clearInterval(timer))
 
 const position = computed(() => shipPosition(minutes.value))
-// Scena ravvicinata: pranzo a bordo (ha la precedenza) oppure lavori in porto quando la nave è ormeggiata.
+// Scena ravvicinata, in ordine di precedenza: pranzo a bordo, lavori in porto quando la nave
+// è ormeggiata, riposo dell'equipaggio la sera e la notte in navigazione.
 const scene = computed(() => {
   if (isLunchTime(minutes.value)) return 'lunch'
   if (position.value.direction === 'docked') return 'port'
+  if (isRestTime(minutes.value)) return 'rest'
   return null
 })
 
@@ -42,7 +45,7 @@ const shipLeft = computed(
 )
 const shipStyle = computed(() => ({ left: `calc${shipLeft.value}` }))
 
-// Lo zoom delle scene (pranzo, porto) punta al ponte della nave: la nave poggia all'85%
+// Lo zoom delle scene (pranzo, porto, riposo) punta al ponte della nave: la nave poggia all'85%
 // dell'altezza (30% del mare, che è la metà bassa) ed è alta circa 0.68 × larghezza.
 const worldStyle = computed(() => ({
   transformOrigin: `calc(${shipLeft.value} + var(--ship-w) / 2) calc(85% - var(--ship-w) * 0.36)`,
@@ -56,6 +59,7 @@ const status = {
 const sceneStatus = {
   lunch: 'Pausa pranzo a bordo',
   port: 'In porto: carico merci e riparazioni',
+  rest: 'Fine turno: l\'equipaggio riposa',
 }
 const statusText = computed(
   () =>
@@ -82,6 +86,7 @@ const statusText = computed(
   <Transition name="scene" mode="out-in">
     <LunchScene v-if="scene === 'lunch'" />
     <PortScene v-else-if="scene === 'port'" />
+    <RestScene v-else-if="scene === 'rest'" />
   </Transition>
 
   <TimeSlider
@@ -119,7 +124,7 @@ html, body {
   transition: left 0.25s ease-out;
 }
 
-/* Pausa pranzo e lavori in porto: zoom sulla nave, poi compare la scena.
+/* Pausa pranzo, lavori in porto e riposo: zoom sulla nave, poi compare la scena.
    All'uscita la scena sfuma e solo dopo parte lo zoom out. */
 .world {
   position: fixed;
