@@ -1,0 +1,31 @@
+// Tutti i tempi sono minuti dall'inizio della settimana (lunedì 00:00, ora locale).
+const MINUTES_PER_DAY = 24 * 60
+const at = (day, hours, minutes = 0) => day * MINUTES_PER_DAY + hours * 60 + minutes
+
+export const WEEK = 7 * MINUTES_PER_DAY
+export const START = at(0, 9)       // lunedì 09:00   → in porto, parte
+export const TURN = at(2, 13, 30)   // mercoledì 13:30 → alla boa
+export const END = at(4, 18)        // venerdì 18:00  → di nuovo in porto
+
+export const DAYS = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+
+export function minutesSinceMonday(date) {
+  const day = (date.getDay() + 6) % 7 // lunedì = 0 … domenica = 6
+  return at(day, date.getHours(), date.getMinutes()) + date.getSeconds() / 60
+}
+
+export function formatWeekMinute(m, withSeconds = false) {
+  const day = Math.floor(m / MINUTES_PER_DAY)
+  const inDay = m - day * MINUTES_PER_DAY
+  const pad = (n) => String(Math.floor(n)).padStart(2, '0')
+  const time = `${pad(inDay / 60)}:${pad(inDay % 60)}`
+  return `${DAYS[day]} ${time}${withSeconds ? ':' + pad((inDay * 60) % 60) : ''}`
+}
+
+// progress: 0 = in porto, 1 = alla boa.
+// direction: 'right' (andata), 'left' (ritorno), 'docked' (fuori orario: ferma in porto).
+export function shipPosition(m) {
+  if (m <= START || m >= END) return { progress: 0, direction: 'docked' }
+  if (m <= TURN) return { progress: (m - START) / (TURN - START), direction: 'right' }
+  return { progress: 1 - (m - TURN) / (END - TURN), direction: 'left' }
+}
