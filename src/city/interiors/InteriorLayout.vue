@@ -13,7 +13,8 @@ defineProps({
 const emit = defineEmits(['leave'])
 
 const onKey = (e) => {
-  if (e.key === 'Escape') emit('leave')
+  // defaultPrevented: Esc già usato da altri (es. per chiudere la finestra del login).
+  if (e.key === 'Escape' && !e.defaultPrevented) emit('leave')
 }
 onMounted(() => addEventListener('keydown', onKey))
 onUnmounted(() => removeEventListener('keydown', onKey))

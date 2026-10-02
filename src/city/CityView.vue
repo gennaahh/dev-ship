@@ -83,7 +83,8 @@ watch(
 )
 
 const onKey = (e) => {
-  if (e.key === 'Escape') unzoom()
+  // defaultPrevented: Esc già usato da altri (es. per chiudere la finestra del login).
+  if (e.key === 'Escape' && !e.defaultPrevented) unzoom()
 }
 onMounted(() => {
   addEventListener('resize', onResize)

@@ -1,5 +1,5 @@
 # Servizi per lo sviluppo locale: PostgreSQL per i dati persistenti, Redis per presenza,
-# classifiche e driver di Colyseus (vedi docs/adr/0001-stack-backend.md).
+# classifiche e driver di Colyseus, Mailpit per le email (vedi docs/adr/0001-stack-backend.md).
 # Le porte sono legate a 127.0.0.1: con bun run dev:lan si espongono le app, non i database.
 name: dev-city
 
@@ -29,6 +29,20 @@ services:
       - redis-data:/data
     healthcheck:
       test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # Intercetta le email inviate dall'API (codici di login): nessuna esce davvero.
+  # Si leggono su http://localhost:8025. Per provare dagli altri PC della rete (dev:lan)
+  # l'interfaccia va esposta: MAILPIT_BIND=0.0.0.0 bun run infra:up.
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - 127.0.0.1:1025:1025 # SMTP
+      - ${MAILPIT_BIND:-127.0.0.1}:8025:8025 # interfaccia web
+    healthcheck:
+      test: [CMD, /mailpit, readyz]
       interval: 2s
       timeout: 3s
       retries: 15

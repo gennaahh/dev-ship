@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "start": "bun src/index.ts"
+    "dev": "bun --env-file=../../.env --watch src/index.ts",
+    "start": "bun --env-file=../../.env src/index.ts"
   },
   "dependencies": {
     "@colyseus/bun-websockets": "^0.18.3",
@@ -12,6 +12,7 @@
     "@colyseus/redis-driver": "^0.18.4",
     "@colyseus/redis-presence": "^0.18.5",
     "@colyseus/schema": "^5.0.35",
+    "jose": "^6.2.12",
     "zod": "^4.6.5"
   },
   "devDependencies": {

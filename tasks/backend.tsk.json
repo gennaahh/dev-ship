@@ -51,7 +51,10 @@
               "title": "Validazione e tipi condivisi: Zod",
               "status": "done"
             },
-            "Runtime dell'API: Bun",
+            {
+              "title": "Runtime dell'API: Bun (in uso con Hono e Better Auth)",
+              "status": "done"
+            },
             {
               "title": "Runtime del game server: verificare Colyseus su Bun (@colyseus/bun-websockets), altrimenti Node 22 LTS",
               "steps": [
@@ -69,7 +72,19 @@
                 }
               ]
             },
-            "Autenticazione: Better Auth (login con GitHub per il team) o JWT fatto in casa",
+            {
+              "title": "Autenticazione",
+              "steps": [
+                {
+                  "title": "Metodo: login con codice via email, senza password né SSO",
+                  "status": "done"
+                },
+                {
+                  "title": "Libreria: Better Auth (plugin emailOTP e jwt)",
+                  "status": "done"
+                }
+              ]
+            },
             "Job in background e cron: BullMQ o pg-boss",
             "Hosting: Fly.io, Railway o Render (servono WebSocket persistenti e un indirizzo per ogni processo Colyseus)"
           ]
@@ -78,8 +93,14 @@
         {
           "title": "Fare un prototipo",
           "steps": [
-            "Login sull'API",
-            "Ingresso in una stanza Colyseus con token",
+            {
+              "title": "Login sull'API con codice via email",
+              "status": "done"
+            },
+            {
+              "title": "Ingresso in una stanza Colyseus con token",
+              "status": "done"
+            },
             {
               "title": "Due giocatori che si vedono muovere (DungeonRoom su Bun, interno del dungeon)",
               "status": "done"
@@ -123,7 +144,16 @@
           "title": "Avviare api, game e web insieme con un solo comando (bun run dev:all)",
           "status": "done"
         },
-        "Gestire la configurazione con variabili d'ambiente validate all'avvio",
+        {
+          "title": "Gestire la configurazione con variabili d'ambiente validate all'avvio",
+          "steps": [
+            {
+              "title": "API (apps/api/src/env.ts, .env nella root)",
+              "status": "done"
+            },
+            "Game server"
+          ]
+        },
         "Impostare la CI (lint, test, build) su GitHub Actions con filtri per percorso",
         "Aggiornare il README con le istruzioni per l'avvio del backend"
       ]
@@ -141,9 +171,21 @@
         "Definire il formato degli errori e un handler centrale",
         "Validare input e output con gli schemi Zod di packages/shared",
         "Aggiungere log strutturati (pino) con request id",
-        "Configurare CORS per il dominio del frontend",
+        {
+          "title": "Configurare CORS per il dominio del frontend (WEB_ORIGINS; in sviluppo la porta di Vite)",
+          "status": "done"
+        },
         "Aggiungere rate limiting basato su Redis",
-        "Impostare migrazioni Drizzle e seed di sviluppo",
+        {
+          "title": "Impostare migrazioni Drizzle e seed di sviluppo",
+          "steps": [
+            {
+              "title": "Migrazioni Drizzle (bun run db:migrate)",
+              "status": "done"
+            },
+            "Seed di sviluppo"
+          ]
+        },
         "Generare la documentazione OpenAPI (@hono/zod-openapi)",
         "Mettere i servizi di dominio (inventario, valuta, partite) in packages/domain, usato anche dal game server",
         "Impostare i test di integrazione con un database usa e getta",
@@ -154,13 +196,61 @@
       "id": "accounts",
       "title": "Gestire giocatori e account",
       "description": "Registrazione, login, sessioni e profilo del giocatore.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
-        "Modellare le tabelle users, sessions e player_profiles",
-        "Implementare il login con GitHub (OAuth)",
-        "Valutare il login con email e password o magic link",
-        "Gestire sessioni e logout, anche da tutti i dispositivi",
-        "Emettere un token breve per entrare nelle stanze Colyseus",
+        {
+          "title": "Modellare le tabelle users, sessions e player_profiles",
+          "steps": [
+            {
+              "title": "user, session, account, verification e jwks (generate da Better Auth)",
+              "status": "done"
+            },
+            "player_profiles"
+          ]
+        },
+        {
+          "title": "Implementare il login con codice via email (6 cifre, valido 10 minuti, monouso)",
+          "status": "done"
+        },
+        {
+          "title": "Limitare i tentativi per codice e le richieste di codice per email e per IP",
+          "steps": [
+            {
+              "title": "5 tentativi per codice",
+              "status": "done"
+            },
+            {
+              "title": "3 codici al minuto e 10 login al minuto per IP",
+              "status": "done"
+            },
+            "Limite di codici per email",
+            "Contatori del rate limit su Redis, per più processi dell'API"
+          ]
+        },
+        {
+          "title": "Inviare le email: Mailpit in sviluppo, provider in produzione (Resend, Postmark o SES)",
+          "steps": [
+            {
+              "title": "Mailpit in sviluppo",
+              "status": "done"
+            },
+            "Provider in produzione (Resend, Postmark o SES)"
+          ]
+        },
+        {
+          "title": "Gestire sessioni e logout, anche da tutti i dispositivi",
+          "steps": [
+            {
+              "title": "Sessioni e logout",
+              "status": "done"
+            },
+            "Logout da tutti i dispositivi"
+          ]
+        },
+        {
+          "title": "Emettere un token breve per entrare nelle stanze Colyseus (JWT di 15 minuti, chiavi su /api/auth/jwks)",
+          "status": "done"
+        },
         "Esporre GET e PATCH del profilo (nome, colore, avatar)",
         "Gestire sospensione, ban e cancellazione dell'account (chiudendo anche le connessioni al game server)"
       ]
@@ -253,7 +343,10 @@
           "title": "Creare apps/game con Colyseus e il transport scelto (Bun o Node)",
           "status": "done"
         },
-        "Verificare in onAuth il token emesso dall'API",
+        {
+          "title": "Verificare in onAuth il token emesso dall'API",
+          "status": "done"
+        },
         {
           "title": "Usare @colyseus/redis-presence e @colyseus/redis-driver per scalare su più processi (attivi se c'è REDIS_URL)",
           "status": "done"

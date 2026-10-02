@@ -1,5 +1,6 @@
 import { Client } from '@colyseus/sdk'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { authClient, getRoomToken } from '../auth.js'
 import { GAME_URL } from '../config.js'
 
 const KEYS = {
@@ -14,15 +15,21 @@ const SMOOTHING = 15
 const RETRY_MS = 5_000
 
 // Entra nella stanza del dungeon e tiene aggiornata la lista dei giocatori da disegnare.
-// status: 'connecting', 'online', 'reconnecting' (connessione persa, il server tiene il posto)
-// oppure 'offline' (game server irraggiungibile: l'interno resta visitabile come prima, e
-// si riprova finché il server non torna su).
+// Si entra solo da loggati, con il token emesso dall'API.
+// status: 'connecting', 'login' (serve il login), 'online', 'reconnecting' (connessione persa,
+// il server tiene il posto) oppure 'offline' (game server o API irraggiungibili: l'interno
+// resta visitabile come prima, e si riprova finché non tornano su).
 export function useDungeonRoom() {
   const status = ref('connecting')
   const players = ref([])
 
+  const session = authClient.useSession()
+  const userId = computed(() => (session.value.isPending ? undefined : (session.value.data?.user?.id ?? null)))
+
   let room = null
-  let disposed = false
+  // Se vogliamo stare nella stanza: da loggati, finché l'interno è aperto.
+  let wanted = false
+  let joining = false
   let raf = 0
   let last = 0
   let retry = 0
@@ -33,6 +40,8 @@ export function useDungeonRoom() {
   function setKey(e, down) {
     const dir = KEYS[e.code]
     if (!dir || e.metaKey || e.ctrlKey || e.altKey) return
+    // Mentre si scrive (es. l'email nella finestra del login) i tasti non muovono nessuno.
+    if (e.target.closest?.('input, textarea, select, dialog')) return
     e.preventDefault()
     if (pressed[dir] === down) return
     pressed[dir] = down
@@ -68,15 +77,28 @@ export function useDungeonRoom() {
   }
 
   async function connect() {
+    clearTimeout(retry)
+    if (!wanted || room || joining) return
+    joining = true
     let joined
     try {
-      joined = await new Client(GAME_URL).joinOrCreate('dungeon')
+      const token = await getRoomToken()
+      if (!token) {
+        status.value = 'login'
+        return
+      }
+      const client = new Client(GAME_URL)
+      client.auth.token = token
+      joined = await client.joinOrCreate('dungeon')
     } catch {
       status.value = 'offline'
       retry = setTimeout(connect, RETRY_MS)
       return
+    } finally {
+      joining = false
     }
-    if (disposed) return joined.leave()
+    // Nel frattempo si è usciti dall'interno o dall'account.
+    if (!wanted) return joined.leave()
 
     room = joined
     status.value = 'online'
@@ -88,34 +110,56 @@ export function useDungeonRoom() {
     // Fuori dalla stanza (server spento, riconnessione fallita): si torna a riprovare.
     room.onLeave(() => {
       room = null
-      status.value = 'offline'
       players.value = []
       drawn.clear()
       cancelAnimationFrame(raf)
-      if (!disposed) retry = setTimeout(connect, RETRY_MS)
+      if (!wanted) return
+      status.value = 'offline'
+      retry = setTimeout(connect, RETRY_MS)
     })
     room.send('input', { ...pressed })
     last = performance.now()
     raf = requestAnimationFrame(frame)
   }
 
+  function disconnect() {
+    wanted = false
+    clearTimeout(retry)
+    room?.leave()
+  }
+
+  // Login e logout (anche da un'altra parte della pagina) fanno entrare e uscire dalla stanza.
+  watch(userId, (id, prev) => {
+    if (id === undefined) return // sessione ancora in caricamento
+    if (prev) disconnect() // cambio di account o logout
+    if (id) {
+      wanted = true
+      status.value = 'connecting'
+      connect()
+    } else {
+      status.value = 'login'
+    }
+  })
+
   onMounted(() => {
     addEventListener('keydown', onKeyDown)
     addEventListener('keyup', onKeyUp)
     addEventListener('blur', onBlur)
     addEventListener('pagehide', onPageHide)
-    connect()
+    if (userId.value !== undefined) {
+      wanted = Boolean(userId.value)
+      status.value = wanted ? 'connecting' : 'login'
+      connect()
+    }
   })
 
   onUnmounted(() => {
-    disposed = true
-    clearTimeout(retry)
+    disconnect()
     cancelAnimationFrame(raf)
     removeEventListener('keydown', onKeyDown)
     removeEventListener('keyup', onKeyUp)
     removeEventListener('blur', onBlur)
     removeEventListener('pagehide', onPageHide)
-    room?.leave()
   })
 
   return { status, players }

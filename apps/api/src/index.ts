@@ -1,18 +1,26 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-
-const port = Number(process.env.PORT ?? 3000)
-// Per ora qualsiasi origine: il frontend gira su Vite in locale o da disco.
-// Va ristretto al dominio del frontend prima del deploy.
-const origin = process.env.CORS_ORIGIN ?? '*'
+import { auth } from './auth.ts'
+import { env, isAllowedOrigin } from './env.ts'
 
 const app = new Hono()
 
-app.use('*', cors({ origin }))
+// Il frontend sta su un'altra origine e manda il cookie di sessione: CORS con credenziali,
+// solo per le origini ammesse (vedi env.ts).
+app.use(
+  '*',
+  cors({
+    origin: (origin) => (isAllowedOrigin(origin) ? origin : null),
+    credentials: true,
+  }),
+)
 
 // Healthcheck: il frontend lo interroga per mostrare lo stato online/offline.
 app.get('/health', (c) => c.json({ status: 'ok', uptime: Math.round(process.uptime()) }))
 
-console.log(`API in ascolto su http://localhost:${port}`)
+// Login, sessione, logout e token per le stanze: tutto gestito da Better Auth.
+app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 
-export default { port, fetch: app.fetch }
+console.log(`API in ascolto su http://localhost:${env.PORT}`)
+
+export default { port: env.PORT, fetch: app.fetch }

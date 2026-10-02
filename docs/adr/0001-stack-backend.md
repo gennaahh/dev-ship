@@ -110,6 +110,7 @@ Scegliamo l'**opzione C**. Ci sono due servizi TypeScript nello stesso monorepo,
 | ORM e migrazioni | Drizzle |
 | Stato effimero e pub/sub | Redis (o Valkey) |
 | Validazione e tipi condivisi | Zod, in `packages/shared` |
+| Autenticazione | Better Auth: login con codice via email (`emailOTP`), token per le stanze (`jwt`) |
 | Client realtime | `colyseus.js`, incapsulato in un composable Vue |
 
 ### Chi fa cosa
@@ -190,7 +191,7 @@ Si prendono durante il prototipo e si registrano in ADR successivi, o aggiornand
 | Tema | Opzioni | Come decidere |
 | --- | --- | --- |
 | Dungeon in tempo reale o a turni | Azione in tempo reale (20–30 tick al secondo, interpolazione e predizione nel client) oppure turni (eventi discreti, niente predizione) | Dal design del gameplay. Cambia carico, complessità del client e hosting. |
-| Autenticazione | Better Auth (adattatori per Hono e Drizzle, login con GitHub) oppure sessioni e JWT scritti da noi | Prototipo del login con GitHub e del token per le stanze. |
+| Invio delle email in produzione | Resend, Postmark, Amazon SES | Insieme all'hosting: consegna, costi, dominio mittente. In sviluppo le email finiscono in Mailpit. |
 | Job in background | pg-boss (solo PostgreSQL) oppure BullMQ (Redis) | Preferenza per pg-boss se basta, per non legare i job a Redis. |
 | Hosting | Fly.io, Railway, Render. Database: Neon, Supabase, Fly Postgres. Redis: Upstash, Fly, Railway | WebSocket persistenti, indirizzo per singolo processo, costi. Netlify resta per il frontend. |
 | Nome del repository | Tenere `dev-ship` o rinominarlo (per esempio `dev-city`) | Da decidere prima del passaggio ad `apps/`. Dopo il cambio di nome il sito su Netlify va ricollegato. |
@@ -211,6 +212,29 @@ Il game server quindi gira su Bun come l'API. Si torna a Node se un aggiornament
 ### Niente decoratori per lo stato (2026-10-02)
 
 Tra i contro c'era che `@colyseus/schema` usa i decoratori, da abilitare in TypeScript anche nel frontend. Dalla versione 5 di `@colyseus/schema` (Colyseus 0.18) lo stato si definisce con `schema()` e i costruttori `t.*`, senza decoratori né configurazione del compilatore, con lo stesso formato sul filo. Il prototipo usa questa forma, e il frontend decodifica lo stato senza conoscerne le classi.
+
+### Login con codice via email (2026-10-02)
+
+Si entra solo con l'email: si inserisce l'indirizzo, arriva un codice e lo si digita. Non ci sono password né login con servizi esterni (GitHub, Google).
+
+- **Perché:** non conserviamo password (niente hash da proteggere, niente recupero, niente password riusate), può giocare anche chi non ha un account GitHub, e un codice da digitare funziona da qualsiasi indirizzo, anche dagli altri PC della rete locale, mentre l'OAuth richiede URL di callback registrati.
+- **Codice invece di link magico:** si legge sul telefono e si digita sul PC, e non viene consumato dai filtri antispam che aprono i link.
+- **È un solo fattore:** chi controlla la casella email entra. Per un gioco è adeguato.
+- **Regole:** codice di 6 cifre, valido 10 minuti, usabile una volta, salvato come hash; pochi tentativi per codice e limiti alle richieste per email e per IP; la risposta non rivela se un indirizzo è registrato.
+- **Dopo il login** non cambia niente: sessione sull'API e token breve per entrare nelle stanze Colyseus.
+
+Un login con GitHub o altri servizi si può aggiungere più avanti come opzione, senza cambiare il resto.
+
+### Libreria di autenticazione: Better Auth (2026-10-02)
+
+Era aperta la scelta tra Better Auth e sessioni e codici scritti da noi. Better Auth copre il flusso deciso sopra con due plugin:
+
+- `emailOTP`: codice di 6 cifre, scadenza, numero di tentativi, codice salvato come hash e rate limit per IP sono opzioni;
+- `jwt`: dopo il login l'API emette su `/api/auth/token` un JWT di 15 minuti con l'id e il nome del giocatore, e pubblica le chiavi su `/api/auth/jwks`. Il game server lo verifica in `onAuth` con le sole chiavi pubbliche (libreria `jose`), senza database né segreti condivisi.
+
+Sessioni, scadenze, logout e protezione dalle richieste di altre origini sono già pronti. Le tabelle (`user`, `session`, `account`, `verification`, `jwks`) le genera Better Auth come schema Drizzle. Il prototipo ha verificato login, codice sbagliato, codice riusato, limite di tentativi e di richieste, e l'ingresso nella stanza: senza token, con un token inventato o con il nome modificato si viene rifiutati.
+
+In sviluppo frontend e API stanno sullo stesso host (localhost o l'IP della rete locale), quindi il cookie di sessione è dello stesso sito. In produzione, con il frontend su Netlify, l'API va messa su un sottodominio dello stesso dominio del frontend, perché i browser bloccano sempre di più i cookie tra siti diversi; altrimenti si passa al plugin `bearer`, con il token di sessione nel client.
 
 ## Quando rivedere questa decisione
 

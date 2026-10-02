@@ -37,57 +37,68 @@ The position follows your local time. Use the slider at the top of the zoomed bi
 
 The backend is being prototyped (see `docs/adr/0001-stack-backend.md`). For now there are:
 
-- an API with a healthcheck;
-- a status badge in the bottom left corner, with one light for the API and one for the game server (green: online, red: offline);
-- a game server: inside the dungeon everyone who is there sees the others move (WASD or arrow keys). Without the game server the dungeon works as before, with a notice at the top, and joins by itself as soon as the server is back.
+- **login with an email code**: press "Accedi" in the bottom left corner, type your email and then the 6-digit code you receive. No passwords;
+- **multiplayer in the dungeon**: logged-in players see each other move (WASD or arrow keys), each with their own name. Without login, or without the game server, the dungeon works as before, with a notice at the top; it joins by itself as soon as the server is back;
+- a **status badge** in the bottom left corner, with one light for the API and one for the game server (green: online, red: offline).
 
 ## Development
 
-Requires [Bun](https://bun.sh).
+Requires [Bun](https://bun.sh) and, for the backend, Docker.
 
 ```bash
 bun install
-bun run dev      # dev server with hot reload
+bun run dev      # frontend only, with hot reload
 bun run build    # builds a single self-contained dist/index.html
 ```
 
-The backend needs PostgreSQL and Redis, which run in Docker (`docker-compose.yml`):
+The build puts all JS and CSS inside `dist/index.html`, so the file also works when opened directly from disk.
+
+### Backend
+
+The first time, start the services in Docker (`docker-compose.yml`) and create the database tables:
 
 ```bash
-bun run infra:up    # starts PostgreSQL 18 and Redis 8 and waits until they are ready
-bun run infra:down  # stops them; the data stays in Docker volumes
+bun run infra:up    # PostgreSQL 18, Redis 8 and Mailpit; waits until they are ready
+bun run db:migrate  # applies the migrations in apps/api/drizzle
 ```
 
-They listen on `127.0.0.1` only (ports 5432 and 6379). Connection strings are in `.env.example`: copy it to `.env`, which is not committed. To wipe the data, run `docker compose down -v`.
-
-To run frontend, API and game server together:
+Then start frontend, API and game server together:
 
 ```bash
 bun run dev:all
 ```
 
-To try it with other PCs on your local network, use instead:
+Login codes are not really sent: they end up in **Mailpit**, at http://localhost:8025. To try the multiplayer, log in with two different emails in two browsers (or a normal and a private window), then open `#/dungeon` in both.
+
+`bun run infra:down` stops the services; the data stays in Docker volumes (`docker compose down -v` wipes it). The services listen on `127.0.0.1` only.
+
+### Other PCs on the local network
 
 ```bash
+MAILPIT_BIND=0.0.0.0 bun run infra:up  # lets the other PCs read their codes in Mailpit
 bun run dev:lan
 ```
 
-Vite prints the `Network` address to open on the other PCs (for example `http://192.168.1.10:5173`). The page looks for the API and the game server on the same host it was opened from, so nothing else needs to be configured. If the other PCs can't connect, check that the firewall lets through ports 5173, 3000 and 2567 (with ufw: `sudo ufw allow 5173,3000,2567/tcp`).
+Vite prints the `Network` address to open on the other PCs (for example `http://192.168.1.10:5173`); Mailpit is on the same address, port 8025. The page looks for the API and the game server on the same host it was opened from, so nothing else needs to be configured. If the other PCs can't connect, check that the firewall lets through ports 5173, 3000, 2567 and 8025 (with ufw: `sudo ufw allow 5173,3000,2567,8025/tcp`).
 
-Or one at a time, each in its own terminal:
+### Running the pieces one at a time
 
 ```bash
 bun run dev       # frontend
-bun run dev:api   # API (Hono on Bun, apps/api) on http://localhost:3000, healthcheck at /health
+bun run dev:api   # API (Hono + Better Auth on Bun, apps/api) on http://localhost:3000, healthcheck at /health
 bun run dev:game  # game server (Colyseus on Bun, apps/game) on ws://localhost:2567, healthcheck at /__healthcheck
 ```
 
-By default the frontend looks for both servers on the host the page was opened from; set `VITE_API_URL` and `VITE_GAME_URL` to point it elsewhere. Both servers read `PORT`, the API also `CORS_ORIGIN`. The game server keeps rooms in memory unless `REDIS_URL` is set: then several processes share matchmaking and presence through Redis, and each one needs `PUBLIC_ADDRESS` (the `host:port` clients use to reach it), for example:
+### Configuration
+
+API and game server read `.env` in the repository root, if there is one: copy `.env.example`, which lists every variable. In development they all have defaults; in production the API stops at startup if `DATABASE_URL`, `BETTER_AUTH_SECRET` or `SMTP_URL` are missing. The frontend looks for both servers on the host the page was opened from; set `VITE_API_URL` and `VITE_GAME_URL` at build time to point it elsewhere.
+
+The database schema lives in `apps/api/src/db`. The tables for players and sessions are generated by Better Auth (`bun run --filter @dev-city/api auth:schema`); after changing the schema, `bun run --filter @dev-city/api db:generate` writes a new migration.
+
+The game server keeps rooms in memory unless `REDIS_URL` is set: then several processes share matchmaking and presence through Redis, and each one needs `PUBLIC_ADDRESS` (the `host:port` clients use to reach it), for example:
 
 ```bash
 cd apps/game
 REDIS_URL=redis://localhost:6379 PORT=2567 PUBLIC_ADDRESS=localhost:2567 bun src/index.ts
 REDIS_URL=redis://localhost:6379 PORT=2568 PUBLIC_ADDRESS=localhost:2568 bun src/index.ts
-``` To try the multiplayer, open `#/dungeon` in two browser tabs.
-
-The build puts all JS and CSS inside `dist/index.html`, so the file also works when opened directly from disk.
+```

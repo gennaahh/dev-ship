@@ -21,6 +21,7 @@ const bugs = [
 const { status, players } = useDungeonRoom()
 const statusText = computed(() => {
   if (status.value === 'connecting') return 'Connessione al server di gioco…'
+  if (status.value === 'login') return 'Accedi (in basso a sinistra) per vedere gli altri giocatori'
   if (status.value === 'reconnecting') return 'Connessione persa, riprovo…'
   if (status.value === 'offline') return 'Server di gioco offline: sei da solo nel dungeon, riprovo…'
   const n = players.value.length
@@ -121,6 +122,9 @@ const statusText = computed(() => {
   color: #2d2a4a;
   font-size: 17px;
   text-align: center;
+}
+.room-status.login {
+  background: #ffd54a;
 }
 .room-status.offline,
 .room-status.reconnecting {

@@ -14,11 +14,13 @@
     "dev:lan": "bun run --parallel 'bunx --bun vite --host' dev:api dev:game",
     "infra:up": "docker compose up -d --wait",
     "infra:down": "docker compose down",
+    "db:migrate": "bun run --filter @dev-city/api db:migrate",
     "build": "bunx --bun vite build",
     "preview": "bunx --bun vite preview"
   },
   "dependencies": {
     "@colyseus/sdk": "^0.18.4",
+    "better-auth": "^1.7.7",
     "vue": "^3.5.0"
   },
   "devDependencies": {

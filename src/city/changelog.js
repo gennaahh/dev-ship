@@ -5,6 +5,8 @@ export const CHANGELOG = [
   {
     date: '2026-10-02',
     items: [
+      { tag: 'new', text: 'Si entra con l\'email: arriva un codice di 6 cifre, niente password (in basso a sinistra, "Accedi").' },
+      { tag: 'new', text: 'Nel dungeon si gioca insieme solo da loggati, ognuno con il proprio nome.' },
       { tag: 'new', text: 'Nel dungeon ci si vede muovere tra giocatori (prototipo multigiocatore, WASD o frecce).' },
       { tag: 'new', text: 'In basso a sinistra le spie del backend: una per l\'API e una per il server di gioco.' },
       { tag: 'new', text: 'Il cartellone ha una terza schermata: questo changelog, scorrevole da vicino.' },

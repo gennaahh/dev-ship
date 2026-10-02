@@ -1,5 +1,6 @@
-import { Room, validate, type Client } from '@colyseus/core'
+import { Room, ServerError, validate, type Client } from '@colyseus/core'
 import { z } from 'zod'
+import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { IDLE, spawnPoint, step, type Input } from '../movement.ts'
 import { DungeonState, Player } from './DungeonState.ts'
 
@@ -17,12 +18,22 @@ const InputMessage = z.object({
 
 // Prototipo della stanza del dungeon: i giocatori si vedono muovere sul pavimento.
 // Il server è autoritativo: il client manda solo i tasti premuti, le posizioni le calcola qui.
-export class DungeonRoom extends Room<{ state: DungeonState }> {
+export class DungeonRoom extends Room<{ state: DungeonState; client: Client<{ auth: PlayerAuth }> }> {
   maxClients = 4
   maxMessagesPerSecond = 30
   state = new DungeonState()
 
   private pressed = new Map<string, Input>()
+
+  // Si entra solo con il token emesso dall'API dopo il login.
+  static async onAuth(token: string) {
+    if (!token) throw new ServerError(401, 'Serve il login')
+    try {
+      return await verifyRoomToken(token)
+    } catch {
+      throw new ServerError(401, 'Token non valido o scaduto')
+    }
+  }
 
   messages = {
     input: validate(InputMessage, (client, input) => {
@@ -40,10 +51,9 @@ export class DungeonRoom extends Room<{ state: DungeonState }> {
     }, TICK_MS)
   }
 
-  onJoin(client: Client) {
-    // Senza login il nome è provvisorio: arriverà dal token emesso dall'API.
+  onJoin(client: Client<{ auth: PlayerAuth }>) {
     const player = new Player()
-    player.name = `Dev ${client.sessionId.slice(0, 4)}`
+    player.name = client.auth!.name // c'è sempre: senza, onAuth rifiuta l'ingresso
     const used = new Set([...this.state.players.values()].map((p) => p.color))
     player.color = COLORS.find((c) => !used.has(c)) ?? COLORS[0]
     Object.assign(player, spawnPoint())
