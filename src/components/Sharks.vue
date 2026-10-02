@@ -1,8 +1,8 @@
 <script setup>
 // Due squali che fanno avanti e indietro nello specchio d'acqua tra porto e boa.
 const sharks = [
-  { bottom: '9%', width: 'clamp(46px, 5vw, 72px)', duration: 48, delay: -6 },
-  { bottom: '3%', width: 'clamp(56px, 6.5vw, 90px)', duration: 64, delay: -40 },
+  { bottom: '9%', width: 'clamp(46px, 5cqw, 72px)', duration: 48, delay: -6 },
+  { bottom: '3%', width: 'clamp(56px, 6.5cqw, 90px)', duration: 64, delay: -40 },
 ]
 </script>
 

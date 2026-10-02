@@ -73,7 +73,7 @@ const label = computed(() => formatWeekMinute(props.minutes, props.live))
   --off: #c9d3dc;
   --sail: #2e86c1;
   --thumb-r: 9px;
-  position: fixed;
+  position: absolute;
   top: 12px;
   left: 50%;
   transform: translateX(-50%);

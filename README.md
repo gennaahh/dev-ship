@@ -1,6 +1,17 @@
-# Devs Ship
+# Dev City
 
-A small Vue 3 single page application that shows the working week as a ship's voyage.
+A small Vue 3 single page application: a cartoon city for the dev team.
+
+## The city
+
+The home page is a city. In the middle of the square stands a big billboard whose screen switches every 5 seconds between the **dev-ship** (the working week as a ship's voyage, see below) and the weekly **leaderboard** (for now with made-up data, just a demo).
+
+- Click the billboard to zoom in on it: the frame and a bit of the city stay in view. Up close the dev-ship shows its time slider, the tabs under the screen switch view by hand, and the rotation pauses while the pointer is on the screen. Click the city, press "Torna in città" or Esc to zoom back out.
+- Around the billboard there are the **mine**, the **dungeon**, the **office**, the **museum** and the **fishing spot**. Click one to fly to its door and go inside (`#/miniera`, `#/dungeon`, `#/ufficio`, `#/museo`, `#/pesca`). The interiors are drafts for now.
+
+## The dev-ship
+
+The screen of the billboard shows the working week as a ship's voyage.
 
 **Live demo:** https://dev-ship.netlify.app
 
@@ -22,7 +33,7 @@ Sea monsters show up only at certain times, and only in the open sea view:
 
 The weather changes too: every day, for one hour picked at random, there is a **storm** (dark clouds, rain, lightning and a rolling ship) or **fog** over the sea. Like the pterodactyl, the pick only uses hours when the open sea is on screen, and it stays fixed for the week.
 
-The position follows your local time. Use the slider at the top to simulate any moment of the week, and press "Torna all'ora attuale" to go back to live time. You can also open a given moment directly with `?at=2026-09-23T13:30`.
+The position follows your local time. Use the slider at the top of the zoomed billboard to simulate any moment of the week, and press "Torna all'ora attuale" to go back to live time. You can also open a given moment directly with `?at=2026-09-23T13:30`.
 
 The app is frontend only, with no backend.
 

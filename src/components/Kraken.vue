@@ -63,7 +63,7 @@ const tentacles = [
   position: absolute;
   left: 56%;
   bottom: 27%;
-  width: clamp(100px, 20vw, 280px);
+  width: clamp(100px, 20cqw, 280px);
   z-index: 3;
   animation: lurk 6s ease-in-out infinite alternate;
 }

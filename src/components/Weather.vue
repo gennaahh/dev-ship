@@ -122,7 +122,7 @@ const fogBanks = [
 .bolt {
   position: absolute;
   top: 6%;
-  width: clamp(40px, 5vw, 70px);
+  width: clamp(40px, 5cqw, 70px);
   opacity: 0;
   filter: drop-shadow(0 0 12px #fff6b0);
   animation: flash 9s linear infinite;
@@ -155,7 +155,7 @@ const fogBanks = [
 }
 @keyframes fall {
   from { transform: translate(0, 0) rotate(12deg); }
-  to { transform: translate(-22vh, 115vh) rotate(12deg); }
+  to { transform: translate(-22cqh, 115cqh) rotate(12deg); }
 }
 /* doppio lampo ravvicinato, poi buio */
 @keyframes flash {

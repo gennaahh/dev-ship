@@ -25,7 +25,7 @@
   position: absolute;
   /* più in basso dello pterodattilo, così se passano insieme non si sovrappongono */
   top: max(30%, 260px);
-  width: clamp(300px, 50vw, 720px);
+  width: clamp(300px, 50cqw, 720px);
   animation: cross 24s linear infinite;
   z-index: 1;
 }

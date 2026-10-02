@@ -53,7 +53,7 @@ const waves = [
 
 <style scoped>
 .scene {
-  position: fixed;
+  position: absolute;
   inset: 0;
   overflow: hidden;
   background: linear-gradient(#8ecdf0 0%, #cdeafa 45%, #fdf1d6 55%);

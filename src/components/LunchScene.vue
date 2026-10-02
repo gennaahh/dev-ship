@@ -196,11 +196,11 @@ const CURLS = [[-24, 121, 11], [-12, 110, 12], [3, 107, 12], [17, 111, 12], [27,
 .lunch {
   /* Mare, parapetto e ponte si agganciano all'altezza del tavolo (0.46 × larghezza),
      così la scena regge sia in orizzontale sia sul telefono. */
-  --tw: min(1100px, 96vw);
+  --tw: min(1100px, 96cqw);
   --table-bottom: 5%;
   --deck-h: calc(var(--table-bottom) + var(--tw) * 0.22);
   --rail-h: calc(var(--tw) * 0.15);
-  position: fixed;
+  position: absolute;
   inset: 0;
   overflow: hidden;
   z-index: 15;
@@ -227,7 +227,7 @@ const CURLS = [[-24, 121, 11], [-12, 110, 12], [3, 107, 12], [17, 111, 12], [27,
   left: -5%;
   right: -5%;
   bottom: var(--deck-h);
-  height: calc(var(--rail-h) + 6vh);
+  height: calc(var(--rail-h) + 6cqh);
   background: linear-gradient(#3f8fc4, #1a5283);
   overflow: hidden;
   animation: rock 7s ease-in-out infinite alternate;

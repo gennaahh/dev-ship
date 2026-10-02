@@ -25,7 +25,7 @@
   position: absolute;
   /* sotto al pannello dello slider, che in alto lo coprirebbe */
   top: max(20%, 180px);
-  width: clamp(200px, 30vw, 460px);
+  width: clamp(200px, 30cqw, 460px);
   animation: cross 28s linear infinite;
   z-index: 1;
 }

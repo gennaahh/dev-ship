@@ -137,11 +137,11 @@ const zzz = [0, 1, 2]
 <style scoped>
 .rest {
   /* Stessa impostazione della scena del pranzo: mare, parapetto e ponte seguono la larghezza del disegno. */
-  --tw: min(1100px, 96vw);
+  --tw: min(1100px, 96cqw);
   --crew-bottom: 4%;
   --deck-h: calc(var(--crew-bottom) + var(--tw) * 0.22);
   --rail-h: calc(var(--tw) * 0.15);
-  position: fixed;
+  position: absolute;
   inset: 0;
   overflow: hidden;
   z-index: 15;
@@ -173,7 +173,7 @@ const zzz = [0, 1, 2]
   left: -5%;
   right: -5%;
   bottom: var(--deck-h);
-  height: calc(var(--rail-h) + 6vh);
+  height: calc(var(--rail-h) + 6cqh);
   background: linear-gradient(#1d4470, #0c2440);
   overflow: hidden;
   animation: rock 8s ease-in-out infinite alternate;
@@ -255,7 +255,7 @@ const zzz = [0, 1, 2]
   left: 50%;
   bottom: 14px;
   transform: translateX(-50%);
-  max-width: calc(100vw - 32px);
+  max-width: calc(100cqw - 32px);
   padding: 6px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.85);

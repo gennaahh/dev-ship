@@ -215,8 +215,8 @@ const RIVETS = [[520, 334], [538, 334], [520, 354], [538, 354]]
 <style scoped>
 .port-scene {
   /* In verticale il disegno si allarga oltre i bordi: meglio tagliare i lati che vederlo minuscolo. */
-  --tw: min(1200px, max(98vw, 60vh));
-  position: fixed;
+  --tw: min(1200px, max(98cqw, 60cqh));
+  position: absolute;
   inset: 0;
   overflow: hidden;
   z-index: 15;
@@ -252,7 +252,7 @@ const RIVETS = [[520, 334], [538, 334], [520, 354], [538, 354]]
   left: 50%;
   bottom: 14px;
   transform: translateX(-50%);
-  max-width: calc(100vw - 32px);
+  max-width: calc(100cqw - 32px);
   padding: 6px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.85);
