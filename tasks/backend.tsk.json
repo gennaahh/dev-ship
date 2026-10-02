@@ -90,9 +90,12 @@
       "id": "api-foundation",
       "title": "Costruire le fondamenta dell'API",
       "description": "Struttura comune a tutti i moduli REST: errori, validazione, log, migrazioni, test.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
-        "Creare l'app Hono con endpoint di healthcheck",
+        {
+          "title": "Creare l'app Hono con endpoint di healthcheck",
+          "status": "done"
+        },
         "Definire il formato degli errori e un handler centrale",
         "Validare input e output con gli schemi Zod di packages/shared",
         "Aggiungere log strutturati (pino) con request id",

@@ -3,8 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev": "bunx --bun vite",
+    "dev:api": "bun run --filter @dev-city/api dev",
     "build": "bunx --bun vite build",
     "preview": "bunx --bun vite preview"
   },
