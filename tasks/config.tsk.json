@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "activeTheme": "pastel-purple-dark",
+  "startCollapsed": false,
+  "themes": [
+    {
+      "name": "pastel-purple-light",
+      "colors": {
+        "viewBackground": "#f6f1fb",
+        "cardBackground": "#efe6f9",
+        "cardBorder": "#d9c6f0",
+        "titleText": "#4a3768",
+        "bodyText": "#5e4b7d",
+        "badgeIncomplete": "#b3a2e8",
+        "badgeComplete": "#a8d8b4",
+        "badgeText": "#3d3158"
+      }
+    },
+    {
+      "name": "pastel-purple-dark",
+      "colors": {
+        "viewBackground": "#1e1a28",
+        "cardBackground": "#2a2338",
+        "cardBorder": "#473a5f",
+        "titleText": "#d9cbf2",
+        "bodyText": "#c0b1da",
+        "badgeIncomplete": "#8d7bc4",
+        "badgeComplete": "#7fb98a",
+        "badgeText": "#211b2e"
+      }
+    }
+  ]
+}

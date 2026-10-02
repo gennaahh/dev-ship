@@ -1,0 +1,376 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "stack-decision",
+      "title": "Decidere lo stack del backend",
+      "description": "Scelta l'opzione C: API Hono per i dati persistenti, game server Colyseus per lobby, dungeon cooperativi e chat.",
+      "status": "in_progress",
+      "steps": [
+        {
+          "title": "Valutare le opzioni",
+          "steps": [
+            {
+              "title": "A: Bun + Hono + TypeScript, PostgreSQL + Drizzle, Redis, WebSocket nativi di Bun",
+              "status": "done"
+            },
+            {
+              "title": "B: Node 22 + NestJS + Prisma + PostgreSQL, Socket.IO con adapter Redis",
+              "status": "done"
+            },
+            {
+              "title": "C (scelta): A + Colyseus per lobby e stanze di gioco con stato sincronizzato, adatta ai dungeon in gruppo",
+              "status": "done"
+            },
+            {
+              "title": "D: Nakama (server di gioco già pronto, moduli in TypeScript) o Supabase",
+              "status": "done"
+            }
+          ]
+        },
+        {
+          "title": "Scegliere i singoli componenti",
+          "steps": [
+            {
+              "title": "Framework HTTP: Hono",
+              "status": "done"
+            },
+            {
+              "title": "Database e ORM: PostgreSQL con Drizzle",
+              "status": "done"
+            },
+            {
+              "title": "Stato effimero, pub/sub e classifiche: Redis o Valkey",
+              "status": "done"
+            },
+            {
+              "title": "Realtime: Colyseus (stanze, matchmaking, stato sincronizzato con @colyseus/schema)",
+              "status": "done"
+            },
+            {
+              "title": "Validazione e tipi condivisi: Zod",
+              "status": "done"
+            },
+            "Runtime dell'API: Bun",
+            "Runtime del game server: verificare Colyseus su Bun (@colyseus/bun-websockets), altrimenti Node 22 LTS",
+            "Autenticazione: Better Auth (login con GitHub per il team) o JWT fatto in casa",
+            "Job in background e cron: BullMQ o pg-boss",
+            "Hosting: Fly.io, Railway o Render (servono WebSocket persistenti e un indirizzo per ogni processo Colyseus)"
+          ]
+        },
+        "Decidere se i dungeon sono in tempo reale (azione) o a turni: cambia tick rate e carico del server",
+        "Fare un prototipo: login sull'API, ingresso in una stanza Colyseus con token, due giocatori che si vedono muovere",
+        {
+          "title": "Scrivere l'ADR con la scelta e le alternative scartate (docs/adr/0001-stack-backend.md)",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "monorepo-setup",
+      "title": "Preparare monorepo e strumenti",
+      "description": "Frontend, API, game server e codice condiviso nello stesso repository.",
+      "status": "todo",
+      "steps": [
+        "Decidere se rinominare il repository (dev-ship → dev-city) prima di spostare il codice",
+        "Configurare i workspace di Bun (apps/web, apps/api, apps/game, packages/shared, packages/domain)",
+        "Spostare il frontend Vue in apps/web senza rompere build e deploy su Netlify",
+        "Configurare Netlify con cartella base apps/web e comando ignore per non ricostruire a ogni modifica del backend",
+        "Configurare TypeScript per api, game e shared (decoratori abilitati per @colyseus/schema)",
+        "Spostare in packages/shared il generatore con seme di weekRandom.js, servirà anche al server",
+        "Aggiungere lint e formatter (Biome o ESLint + Prettier)",
+        "Scrivere un docker-compose con PostgreSQL e Redis per lo sviluppo locale",
+        "Avviare api, game e web insieme con un solo comando",
+        "Gestire la configurazione con variabili d'ambiente validate all'avvio",
+        "Impostare la CI (lint, test, build) su GitHub Actions con filtri per percorso",
+        "Aggiornare il README con le istruzioni per l'avvio del backend"
+      ]
+    },
+    {
+      "id": "api-foundation",
+      "title": "Costruire le fondamenta dell'API",
+      "description": "Struttura comune a tutti i moduli REST: errori, validazione, log, migrazioni, test.",
+      "status": "todo",
+      "steps": [
+        "Creare l'app Hono con endpoint di healthcheck",
+        "Definire il formato degli errori e un handler centrale",
+        "Validare input e output con gli schemi Zod di packages/shared",
+        "Aggiungere log strutturati (pino) con request id",
+        "Configurare CORS per il dominio del frontend",
+        "Aggiungere rate limiting basato su Redis",
+        "Impostare migrazioni Drizzle e seed di sviluppo",
+        "Generare la documentazione OpenAPI (@hono/zod-openapi)",
+        "Mettere i servizi di dominio (inventario, valuta, partite) in packages/domain, usato anche dal game server",
+        "Impostare i test di integrazione con un database usa e getta",
+        "Decidere il versioning delle API (/v1)"
+      ]
+    },
+    {
+      "id": "accounts",
+      "title": "Gestire giocatori e account",
+      "description": "Registrazione, login, sessioni e profilo del giocatore.",
+      "status": "todo",
+      "steps": [
+        "Modellare le tabelle users, sessions e player_profiles",
+        "Implementare il login con GitHub (OAuth)",
+        "Valutare il login con email e password o magic link",
+        "Gestire sessioni e logout, anche da tutti i dispositivi",
+        "Emettere un token breve per entrare nelle stanze Colyseus",
+        "Esporre GET e PATCH del profilo (nome, colore, avatar)",
+        "Gestire sospensione, ban e cancellazione dell'account (chiudendo anche le connessioni al game server)"
+      ]
+    },
+    {
+      "id": "permissions",
+      "title": "Gestire permessi e dati di amministrazione",
+      "description": "Ruoli, controllo accessi e tracciamento delle azioni degli admin.",
+      "status": "todo",
+      "steps": [
+        "Definire ruoli e permessi (giocatore, moderatore, admin)",
+        "Scrivere un middleware che controlla i permessi per ogni rotta",
+        "Applicare gli stessi permessi in onAuth delle stanze Colyseus",
+        "Registrare in un audit log ogni azione amministrativa",
+        "Esporre gli endpoint admin (giocatori, ban, oggetti, valuta)",
+        "Rendere accessibile solo agli admin il pannello @colyseus/monitor",
+        "Proteggere gli endpoint admin con un prefisso e test dedicati"
+      ]
+    },
+    {
+      "id": "inventory",
+      "title": "Gestire inventario e oggetti",
+      "description": "Catalogo degli oggetti e oggetti posseduti dai giocatori.",
+      "status": "todo",
+      "steps": [
+        "Modellare il catalogo (item_definitions: tipo, rarità, impilabile, metadati)",
+        "Modellare gli oggetti posseduti (player_items con quantità)",
+        "Collegare gli oggetti ai luoghi della città (gemme dalla miniera, bug dal dungeon, pesci dalla pesca)",
+        "Esporre lettura dell'inventario ed equipaggiamento",
+        "Caricare l'equipaggiamento nel dungeon all'ingresso e salvarlo all'uscita",
+        "Rendere atomiche le operazioni di aggiunta e rimozione (transazioni)",
+        "Permettere agli admin di assegnare o togliere oggetti"
+      ]
+    },
+    {
+      "id": "economy",
+      "title": "Gestire valuta e acquisti",
+      "description": "Portafoglio dei giocatori, registro movimenti e negozio.",
+      "status": "todo",
+      "steps": [
+        "Definire le valute del gioco",
+        "Modellare un registro movimenti immutabile (ledger) da cui derivare il saldo",
+        "Creare il catalogo del negozio con prezzi",
+        "Implementare l'acquisto in una sola transazione (scala la valuta, aggiunge l'oggetto)",
+        "Rendere idempotenti gli acquisti con una chiave di idempotenza",
+        "Impedire saldi negativi e acquisti concorrenti doppi",
+        "Esporre lo storico dei movimenti al giocatore"
+      ]
+    },
+    {
+      "id": "social",
+      "title": "Gestire gilde, party e amici",
+      "description": "Relazioni tra giocatori, persistenti (amici, gilde) ed effimere (party per i dungeon).",
+      "status": "todo",
+      "steps": [
+        {
+          "title": "Amici",
+          "steps": [
+            "Inviare, accettare e rifiutare richieste di amicizia",
+            "Rimuovere amici e bloccare giocatori",
+            "Mostrare lo stato online degli amici (presenza da Redis)"
+          ]
+        },
+        {
+          "title": "Gilde",
+          "steps": [
+            "Modellare gilde, membri e ruoli interni (capo, ufficiale, membro)",
+            "Creare, sciogliere e modificare una gilda",
+            "Gestire inviti, richieste di ingresso ed espulsioni"
+          ]
+        },
+        {
+          "title": "Party",
+          "steps": [
+            "Implementare il party come stanza Colyseus (PartyRoom) con membri e capo nello stato",
+            "Invitare, entrare, uscire e passare il ruolo di capo",
+            "Far entrare l'intero party nella stessa lobby o nello stesso dungeon",
+            "Mantenere il party quando un membro si disconnette per poco"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "game-server",
+      "title": "Preparare il game server Colyseus",
+      "description": "Servizio realtime comune a party, lobby, dungeon e chat.",
+      "status": "todo",
+      "steps": [
+        "Creare apps/game con Colyseus e il transport scelto (Bun o Node)",
+        "Verificare in onAuth il token emesso dall'API",
+        "Usare @colyseus/redis-presence e @colyseus/redis-driver per scalare su più processi",
+        "Definire le classi di stato con @colyseus/schema e condividerle con il client",
+        "Definire i messaggi client → server con schemi Zod e rifiutare quelli non validi",
+        "Gestire la riconnessione con allowReconnection",
+        "Limitare la frequenza dei messaggi per client",
+        "Tenere la presenza dei giocatori online in Redis",
+        "Abilitare il playground di Colyseus solo in sviluppo",
+        "Testare il carico con @colyseus/loadtest"
+      ]
+    },
+    {
+      "id": "lobbies",
+      "title": "Gestire lobby in tempo reale",
+      "description": "Stanze di attesa in cui il gruppo si raduna prima di un dungeon.",
+      "status": "todo",
+      "steps": [
+        "Elencare le lobby aperte con la LobbyRoom integrata di Colyseus",
+        "Creare, entrare e uscire da una lobby",
+        "Gestire host, posti massimi, lobby private con codice",
+        "Gestire lo stato pronto e la scelta del dungeon o della difficoltà",
+        "Avviare il dungeon: creare la stanza con matchMaker e spostare tutti con le seat reservation",
+        "Riassegnare l'host o chiudere la lobby se l'host si disconnette",
+        "Valutare un matchmaking automatico per chi entra da solo"
+      ]
+    },
+    {
+      "id": "coop-dungeons",
+      "title": "Costruire i dungeon cooperativi",
+      "description": "Stanze Colyseus autoritative in cui il gruppo affronta i bug-mostri insieme.",
+      "status": "todo",
+      "steps": [
+        {
+          "title": "Progettare il gameplay",
+          "steps": [
+            "Definire dimensione del gruppo, durata di una run e condizioni di vittoria",
+            "Definire combattimento e abilità dei giocatori",
+            "Definire i mostri a partire dai bug (più vecchio il bug, più grosso il mostro)",
+            "Definire il boss del venerdì: l'incidente in produzione"
+          ]
+        },
+        {
+          "title": "Implementare la DungeonRoom",
+          "steps": [
+            "Modellare lo stato (giocatori, mostri, stanze, bottino) con @colyseus/schema",
+            "Generare il dungeon da un seme condiviso tra server e client",
+            "Far girare la simulazione con setSimulationInterval a un tick rate fisso",
+            "Applicare lato server gli input dei giocatori, senza fidarsi delle posizioni inviate dal client",
+            "Muovere i mostri con un'IA semplice lato server",
+            "Gestire morte, rianimazione e uscita anticipata di un giocatore",
+            "Mettere in pausa o far proseguire la run quando qualcuno si disconnette"
+          ]
+        },
+        {
+          "title": "Chiudere la run",
+          "steps": [
+            "Decidere come dividere il bottino (personale o a turni)",
+            "Salvare risultato e ricompense in PostgreSQL in una sola transazione",
+            "Emettere gli eventi per achievement, classifiche e analytics"
+          ]
+        },
+        {
+          "title": "Mostrarlo nel frontend",
+          "steps": [
+            "Collegare DungeonInterior.vue alla stanza con colyseus.js",
+            "Interpolare le posizioni degli altri giocatori per un movimento fluido",
+            "Prevedere in locale il movimento del proprio personaggio"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "matches",
+      "title": "Gestire partite e storico",
+      "description": "Ogni run di dungeon (e in futuro altre attività) diventa una partita con risultati consultabili.",
+      "status": "todo",
+      "steps": [
+        "Modellare matches e match_participants (tipo, seme, durata, esito)",
+        "Gestire gli stati della partita (creata, in corso, finita, abbandonata)",
+        "Creare il record all'avvio della DungeonRoom e chiuderlo in onDispose",
+        "Gestire le partite rimaste aperte se il processo del game server si ferma",
+        "Valutare altre attività come partite (sessione di pesca, scavo in miniera)",
+        "Esporre lo storico paginato per giocatore e per gilda"
+      ]
+    },
+    {
+      "id": "achievements-leaderboards",
+      "title": "Gestire achievement e classifiche",
+      "description": "Obiettivi sbloccabili e la classifica settimanale che oggi è finta.",
+      "status": "todo",
+      "steps": [
+        "Definire il catalogo degli achievement e le condizioni di sblocco",
+        "Tracciare i progressi a partire dagli eventi di gioco",
+        "Notificare lo sblocco in tempo reale",
+        "Tenere la classifica settimanale in un sorted set di Redis",
+        "Aggiungere classifiche dei dungeon (run più veloce, di gruppo e di gilda)",
+        "Azzerare la classifica il lunedì alle 09:00, quando la nave parte",
+        "Salvare in PostgreSQL la fotografia di fine settimana",
+        "Esporre classifica corrente, storiche e posizione del giocatore",
+        "Sostituire i dati finti di Leaderboard.vue con quelli dell'API"
+      ]
+    },
+    {
+      "id": "chat",
+      "title": "Gestire chat globale e di area",
+      "description": "Canale globale, un canale per ogni luogo della città, più gilda, party e dungeon, tutti come stanze Colyseus.",
+      "status": "todo",
+      "steps": [
+        "Implementare una ChatRoom con filterBy per canale (globale, area, gilda, party)",
+        "Usare la chat interna delle stanze per lobby e dungeon",
+        "Entrare automaticamente nel canale di area quando si entra in un luogo (miniera, dungeon, ...)",
+        "Salvare gli ultimi N messaggi per canale in Redis e inviarli all'ingresso",
+        "Gestire i messaggi privati tra amici",
+        "Rispettare i blocchi tra giocatori",
+        "Aggiungere filtro parole e limite di frequenza",
+        "Permettere ai moderatori di silenziare e cancellare messaggi",
+        "Permettere ai giocatori di segnalare messaggi"
+      ]
+    },
+    {
+      "id": "analytics",
+      "title": "Raccogliere report e analytics",
+      "description": "Eventi di gioco, metriche aggregate e report per gli admin.",
+      "status": "todo",
+      "steps": [
+        "Definire gli eventi da tracciare (login, run di dungeon, acquisto, achievement, ...)",
+        "Salvare gli eventi in una tabella append-only",
+        "Calcolare aggregati giornalieri con un job pianificato",
+        "Esporre report admin (giocatori attivi, economia, run completate e abbandonate)",
+        "Monitorare stanze attive, client connessi e durata dei tick del game server",
+        "Gestire la coda delle segnalazioni dei giocatori",
+        "Valutare un database analitico (ClickHouse) se i volumi crescono"
+      ]
+    },
+    {
+      "id": "frontend-integration",
+      "title": "Collegare il frontend Vue",
+      "description": "Portare login, dati veri e realtime dentro la città.",
+      "status": "todo",
+      "steps": [
+        "Scrivere un client API tipizzato a partire dagli schemi condivisi",
+        "Aggiungere login e profilo nell'interfaccia",
+        "Scrivere un composable Vue che incapsula colyseus.js (connessione, stanza, stato reattivo)",
+        "Mostrare party, amici online e lobby nella città",
+        "Mostrare la chat di area dentro gli interni dei luoghi",
+        "Mostrare inventario e valuta del giocatore",
+        "Mantenere funzionante la modalità senza backend (demo offline)"
+      ]
+    },
+    {
+      "id": "deploy",
+      "title": "Mettere in produzione il backend",
+      "description": "Hosting di API e game server, database gestiti, monitoraggio e backup.",
+      "status": "todo",
+      "steps": [
+        "Scegliere l'hosting di API e game server con supporto WebSocket",
+        "Configurare publicAddress per ogni processo Colyseus, così il client si collega al processo giusto",
+        "Scegliere PostgreSQL gestito (Neon, Supabase, Fly Postgres)",
+        "Scegliere Redis gestito (Upstash, Fly, Railway)",
+        "Creare le immagini Docker di api e game",
+        "Eseguire le migrazioni in automatico al deploy",
+        "Gestire i deploy del game server senza interrompere le run in corso (graceful shutdown)",
+        "Configurare gli URL di API e game server nel frontend su Netlify",
+        "Aggiungere monitoraggio errori (Sentry) e metriche",
+        "Configurare e provare il ripristino dei backup del database"
+      ]
+    }
+  ]
+}
