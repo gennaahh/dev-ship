@@ -7,6 +7,7 @@ A small Vue 3 single page application: a cartoon city for the dev team.
 The home page is a city. In the middle of the square stands a big billboard whose screen switches every 5 seconds between the **dev-ship** (the working week as a ship's voyage, see below), the weekly **leaderboard** (for now with made-up data, just a demo) and the **changelog** of the latest changes (scrollable when zoomed in, it starts back from the top every time it shows up).
 
 - Click the billboard to zoom in on it: the frame and a bit of the city stay in view. Up close the dev-ship shows its time slider, the tabs under the screen switch view by hand, and the rotation pauses while the pointer is on the screen. Click the city, press "Torna in città" or Esc to zoom back out.
+- Double-click the **Dev-ship** label under the billboard screen to open the dev-ship alone, full screen, without the rest of the interface (handy on a wall screen). Esc or another double-click closes it.
 - Around the billboard there are the **mine**, the **dungeon**, the **office**, the **museum** and the **fishing spot**. Click one to fly to its door and go inside (`#/miniera`, `#/dungeon`, `#/ufficio`, `#/museo`, `#/pesca`). The interiors are drafts for now.
 
 ## The dev-ship

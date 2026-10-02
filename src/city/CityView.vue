@@ -8,7 +8,7 @@ const props = defineProps({
   // Edificio in cui ci si trova (null = in città).
   inside: { type: String, default: null },
 })
-const emit = defineEmits(['enter'])
+const emit = defineEmits(['enter', 'fullscreen'])
 
 // Il palco della città è disegnato a 1600 × 1000 e la "camera" lo scala e lo sposta
 // per adattarlo alla finestra, per zoomare sul cartellone o sulla porta di un edificio.
@@ -118,7 +118,7 @@ const boxStyle = (b) => ({ left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`,
         <span class="sign">{{ p.name }}</span>
       </button>
 
-      <Billboard :zoomed="zoomed" @zoom="zoomBoard" />
+      <Billboard :zoomed="zoomed" @zoom="zoomBoard" @fullscreen="emit('fullscreen')" />
     </div>
 
     <Transition name="fade">

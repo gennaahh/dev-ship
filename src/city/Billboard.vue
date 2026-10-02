@@ -7,7 +7,7 @@ import Changelog from './Changelog.vue'
 const props = defineProps({
   zoomed: { type: Boolean, default: false },
 })
-const emit = defineEmits(['zoom'])
+const emit = defineEmits(['zoom', 'fullscreen'])
 
 // Lo schermo alterna dev-ship, classifica e changelog ogni 5 secondi. Il cambio lo dà la fine
 // dell'animazione della barra di avanzamento: mettendola in pausa si ferma anche la rotazione.
@@ -85,7 +85,9 @@ function onClick() {
           class="tab"
           :class="{ active: i === current }"
           :tabindex="zoomed ? 0 : -1"
+          :title="v.id === 'ship' ? 'Doppio clic: dev-ship a schermo intero' : undefined"
           @click.stop="zoomed ? show(i) : onClick()"
+          @dblclick.stop="v.id === 'ship' && emit('fullscreen')"
         >
           <span class="led" />
           {{ v.label }}
