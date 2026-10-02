@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 // Cornice comune degli interni: la scena disegnata riempie lo schermo, sopra c'è il cartello
 // col nome del luogo, il pulsante per tornare in città e le idee per quando sarà giocabile.
@@ -12,29 +12,50 @@ defineProps({
 })
 const emit = defineEmits(['leave'])
 
+// Il pannello si può ripiegare sul solo nome, per lasciare libera la scena.
+// Sui telefoni parte ripiegato: lì sta in alto, sopra la scena.
+const open = ref(!matchMedia('(max-width: 720px)').matches)
+
+// Entrando, il focus resta sul pulsante del luogo nella città, qui sotto: lo si porta
+// sull'interno, così Invio apre la chat invece di cliccarlo di nuovo.
+const root = ref(null)
+
 const onKey = (e) => {
   // defaultPrevented: Esc già usato da altri (es. per chiudere la finestra del login).
   if (e.key === 'Escape' && !e.defaultPrevented) emit('leave')
 }
-onMounted(() => addEventListener('keydown', onKey))
+onMounted(() => {
+  addEventListener('keydown', onKey)
+  root.value.focus({ preventScroll: true })
+})
 onUnmounted(() => removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="interior">
+  <div ref="root" class="interior" tabindex="-1">
     <div class="art">
       <slot />
     </div>
 
     <button class="back" @click="emit('leave')">← Torna in città</button>
 
-    <div class="card" :style="{ '--tint': tint }">
+    <div class="card" :class="{ folded: !open }" :style="{ '--tint': tint }">
       <span class="draft">BOZZA</span>
+      <button
+        class="fold"
+        :aria-expanded="open"
+        :aria-label="open ? 'Ripiega il pannello' : 'Apri il pannello'"
+        @click="open = !open"
+      >
+        {{ open ? '−' : '+' }}
+      </button>
       <h1>{{ place.name }}</h1>
-      <p class="tagline">{{ place.tagline }}</p>
-      <ul v-if="plans.length">
-        <li v-for="p in plans" :key="p">{{ p }}</li>
-      </ul>
+      <template v-if="open">
+        <p class="tagline">{{ place.tagline }}</p>
+        <ul v-if="plans.length">
+          <li v-for="p in plans" :key="p">{{ p }}</li>
+        </ul>
+      </template>
     </div>
   </div>
 </template>
@@ -47,6 +68,7 @@ onUnmounted(() => removeEventListener('keydown', onKey))
   overflow: hidden;
   font-family: 'Lilita One', 'Baloo 2', system-ui, sans-serif;
   background: #2d2a4a;
+  outline: none;
 }
 .art {
   position: absolute;
@@ -87,6 +109,42 @@ onUnmounted(() => removeEventListener('keydown', onKey))
   background: color-mix(in srgb, var(--tint) 88%, transparent);
   box-shadow: 0 6px 0 #2d2a4a;
   color: #fff8e6;
+}
+/* Quando l'account e le spie lasciano il centro (.hud in App.vue) il pannello sale sopra
+   di loro; sui telefoni, dove in basso ci sono anche la chat, va sotto al pulsante per tornare. */
+@media (max-width: 1240px) {
+  .card {
+    bottom: 72px;
+  }
+}
+@media (max-width: 720px) {
+  .card {
+    top: 96px;
+    bottom: auto;
+  }
+}
+.card.folded {
+  width: auto;
+  padding: 10px 22px 12px 60px;
+}
+.card.folded h1 {
+  font-size: 30px;
+}
+.fold {
+  position: absolute;
+  top: -18px;
+  left: 18px;
+  width: 34px;
+  height: 34px;
+  padding: 0 0 3px;
+  border: 4px solid #2d2a4a;
+  border-radius: 10px;
+  background: #ffd54a;
+  color: #2d2a4a;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
 }
 .draft {
   position: absolute;

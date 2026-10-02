@@ -134,12 +134,8 @@ const signOut = () => authClient.signOut()
 </template>
 
 <style scoped>
+/* La posizione la decide App.vue, che la mette di fianco allo stato dei servizi. */
 .account {
-  position: fixed;
-  left: 16px;
-  bottom: 64px;
-  /* Come le spie: sopra la città e sopra gli interni (z-index 100). */
-  z-index: 150;
   display: flex;
   align-items: center;
   gap: 10px;

@@ -25,9 +25,9 @@ const lamps = [
   { x: 470, y: 720 },
   { x: 1130, y: 720 },
 ]
-// Pietre della piazza, disposte su tre anelli.
+// Pietre della piazza, disposte su due anelli attorno alla fontana.
 const cobbles = []
-for (const [rx, ry, n] of [[300, 62, 22], [200, 40, 15], [100, 20, 8]]) {
+for (const [rx, ry, n] of [[300, 62, 22], [200, 40, 15]]) {
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + rx
     cobbles.push({ x: 800 + Math.cos(a) * rx, y: 750 + Math.sin(a) * ry })
@@ -127,10 +127,12 @@ for (const [rx, ry, n] of [[300, 62, 22], [200, 40, 15], [100, 20, 8]]) {
       </g>
     </g>
 
-    <!-- Piazza -->
+    <!-- Piazza: il gradino del bordo, il selciato e il lastricato su cui sta la fontana -->
+    <ellipse cx="800" cy="760" rx="360" ry="86" fill="#c9a874" stroke="#2d2a4a" stroke-width="5" />
     <ellipse cx="800" cy="750" rx="360" ry="86" fill="#f0dcb0" stroke="#2d2a4a" stroke-width="5" />
     <ellipse cx="800" cy="750" rx="330" ry="72" fill="none" stroke="#d9bf8c" stroke-width="4" stroke-dasharray="18 12" />
-    <ellipse v-for="(c, i) in cobbles" :key="i" :cx="c.x" :cy="c.y" rx="10" ry="5" fill="#d9bf8c" />
+    <ellipse v-for="(c, i) in cobbles" :key="i" :cx="c.x" :cy="c.y" rx="10" ry="5" :fill="i % 3 ? '#d9bf8c' : '#e3ca9a'" />
+    <ellipse cx="800" cy="752" rx="92" ry="23" fill="#e8d1a2" stroke="#d9bf8c" stroke-width="4" />
 
     <!-- Lampioni -->
     <g v-for="(l, i) in lamps" :key="i" :transform="`translate(${l.x} ${l.y})`" stroke="#2d2a4a" stroke-width="4">

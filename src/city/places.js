@@ -1,8 +1,10 @@
+import Plaza from './buildings/Plaza.vue'
 import Mine from './buildings/Mine.vue'
 import Dungeon from './buildings/Dungeon.vue'
 import Office from './buildings/Office.vue'
 import Museum from './buildings/Museum.vue'
 import FishingSpot from './buildings/FishingSpot.vue'
+import PlazaInterior from './interiors/PlazaInterior.vue'
 import MineInterior from './interiors/MineInterior.vue'
 import DungeonInterior from './interiors/DungeonInterior.vue'
 import OfficeInterior from './interiors/OfficeInterior.vue'
@@ -11,7 +13,17 @@ import FishingInterior from './interiors/FishingInterior.vue'
 
 // I luoghi visitabili della città. box è il riquadro dell'edificio sul palco della città
 // (1600 × 1000), door il punto su cui zooma la camera quando ci si entra.
+// L'ordine conta: chi viene dopo sta sopra, e la piazza resta sotto alla zona di pesca.
 export const PLACES = [
+  {
+    id: 'piazza',
+    name: 'Piazza',
+    tagline: 'Si passeggia, si chiacchiera e si fa un giro allo shop',
+    box: { x: 440, y: 664, w: 720, h: 172 },
+    door: { x: 800, y: 780 },
+    building: Plaza,
+    interior: PlazaInterior,
+  },
   {
     id: 'miniera',
     name: 'Miniera',

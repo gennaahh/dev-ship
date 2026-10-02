@@ -2,7 +2,9 @@ import { defineRoom, defineServer } from '@colyseus/core'
 import { BunWebSockets } from '@colyseus/bun-websockets'
 import { RedisDriver } from '@colyseus/redis-driver'
 import { RedisPresence } from '@colyseus/redis-presence'
+import { ChatRoom } from './rooms/ChatRoom.ts'
 import { DungeonRoom } from './rooms/DungeonRoom.ts'
+import { PlazaRoom } from './rooms/PlazaRoom.ts'
 
 const port = Number(process.env.PORT ?? 2567)
 // Con REDIS_URL più processi condividono matchmaking e presenza; senza, tutto resta in memoria
@@ -18,6 +20,9 @@ const server = defineServer({
   publicAddress,
   rooms: {
     dungeon: defineRoom(DungeonRoom),
+    plaza: defineRoom(PlazaRoom),
+    // Una stanza per canale: chi chiede lo stesso canale finisce nella stessa stanza.
+    chat: defineRoom(ChatRoom).filterBy(['channel']),
   },
   greet: false,
 })

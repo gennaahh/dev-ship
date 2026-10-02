@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useDungeonRoom } from '../../composables/useDungeonRoom.js'
 import { BACKEND_ENABLED } from '../../config.js'
+import Avatar from '../Avatar.vue'
 import InteriorLayout from './InteriorLayout.vue'
 
 defineProps({ place: { type: Object, required: true } })
@@ -23,7 +24,7 @@ const bugs = [
 const { status, players } = BACKEND_ENABLED ? useDungeonRoom() : { status: ref(null), players: ref([]) }
 const statusText = computed(() => {
   if (status.value === 'connecting') return 'Connessione al server di gioco…'
-  if (status.value === 'login') return 'Accedi (in basso a sinistra) per vedere gli altri giocatori'
+  if (status.value === 'login') return 'Accedi (in basso al centro) per vedere gli altri giocatori'
   if (status.value === 'reconnecting') return 'Connessione persa, riprovo…'
   if (status.value === 'offline') return 'Server di gioco offline: sei da solo nel dungeon, riprovo…'
   const n = players.value.length
@@ -82,15 +83,7 @@ const statusText = computed(() => {
         </g>
         <!-- Giocatori -->
         <g v-for="p in players" :key="p.id" :transform="`translate(${p.x} ${p.y})`">
-          <ellipse cx="0" cy="4" rx="34" ry="10" fill="#120f1f" stroke="none" opacity="0.5" />
-          <path d="M -30 0 Q -30 -70 0 -70 Q 30 -70 30 0 Z" :fill="p.color" />
-          <circle cx="-10" cy="-44" r="7" fill="#fff" />
-          <circle cx="10" cy="-44" r="7" fill="#fff" />
-          <circle cx="-9" cy="-43" r="3" fill="#2d2a4a" stroke="none" />
-          <circle cx="11" cy="-43" r="3" fill="#2d2a4a" stroke="none" />
-          <text class="name" :class="{ me: p.me }" y="-86" text-anchor="middle">
-            {{ p.me ? `${p.name} (tu)` : p.name }}
-          </text>
+          <Avatar :look="{ color: p.color }" :dir="p.dir" :walking="p.walking" :name="p.me ? `${p.name} (tu)` : p.name" :me="p.me" />
         </g>
       </g>
     </svg>
@@ -99,16 +92,6 @@ const statusText = computed(() => {
 </template>
 
 <style scoped>
-.name {
-  fill: #fff8e6;
-  stroke: #2d2a4a;
-  stroke-width: 6px;
-  paint-order: stroke;
-  font-size: 22px;
-}
-.name.me {
-  fill: #ffd54a;
-}
 .room-status {
   position: absolute;
   top: 16px;

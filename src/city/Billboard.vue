@@ -125,6 +125,11 @@ function onClick() {
   width: 620px;
   height: 240px;
   overflow: visible;
+  /* Solo pali e traversi sono del cartellone: tra le gambe si clicca la piazza. */
+  pointer-events: none;
+}
+.supports g {
+  pointer-events: visiblePainted;
 }
 
 .bulbs {

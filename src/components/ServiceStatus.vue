@@ -2,7 +2,7 @@
 import { API_URL, GAME_URL } from '../config.js'
 import { useHealthCheck } from '../composables/useHealthCheck.js'
 
-// Spie in basso a sinistra: dicono se il frontend raggiunge l'API e il game server.
+// Spie in basso al centro, di fianco all'account: dicono se il frontend raggiunge l'API e il game server.
 const services = [
   {
     name: 'API',
@@ -19,20 +19,16 @@ const LABELS = { online: 'online', offline: 'offline', checking: 'in verifica…
 
 <template>
   <div class="service-status" role="status" aria-live="polite">
-    Stato:
+    <span class="wordy">Stato:</span>
     <span v-for="s in services" :key="s.name" class="service" :class="s.status.value">
-      {{ s.name }} <span class="dot" aria-hidden="true" /> {{ LABELS[s.status.value] }}
+      {{ s.name }} <span class="dot" aria-hidden="true" /> <span class="wordy">{{ LABELS[s.status.value] }}</span>
     </span>
   </div>
 </template>
 
 <style scoped>
+/* La posizione la decide App.vue, che la mette di fianco al pulsante dell'account. */
 .service-status {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
-  /* Sopra la città e sopra gli interni (z-index 100). */
-  z-index: 150;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -69,5 +65,17 @@ const LABELS = { online: 'online', offline: 'offline', checking: 'in verifica…
 .offline .dot {
   background: #ff4a4a;
   box-shadow: 0 0 8px #ff4a4a;
+}
+/* Sugli schermi stretti bastano i pallini, così sta su una riga di fianco all'account
+   (vedi .hud in App.vue): le parole restano per i lettori di schermo. */
+@media (max-width: 840px) {
+  .wordy {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 </style>

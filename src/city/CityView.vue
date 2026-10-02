@@ -8,7 +8,7 @@ const props = defineProps({
   // Edificio in cui ci si trova (null = in città).
   inside: { type: String, default: null },
 })
-const emit = defineEmits(['enter', 'fullscreen'])
+const emit = defineEmits(['enter', 'fullscreen', 'zoom'])
 
 // Il palco della città è disegnato a 1600 × 1000 e la "camera" lo scala e lo sposta
 // per adattarlo alla finestra, per zoomare sul cartellone o sulla porta di un edificio.
@@ -27,6 +27,8 @@ const onResize = () => {
 // Su cosa punta la camera: null (tutta la città), 'billboard' o l'id di un edificio.
 const focus = ref(props.inside)
 const zoomed = computed(() => focus.value === 'billboard')
+// Fuori serve per far posto al cartellone (App ripiega la chat).
+watch(zoomed, (v) => emit('zoom', v))
 
 const camera = computed(() => {
   const base = Math.min(vw.value / W, vh.value / H)
@@ -172,6 +174,15 @@ const boxStyle = (b) => ({ left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`,
 .place:focus-visible {
   outline: none;
 }
+/* La piazza è il pavimento sotto al cartellone: non salta, si accende soltanto. */
+.place-piazza:hover .building,
+.place-piazza:focus-visible .building {
+  transform: none;
+}
+.place-piazza:hover :deep(.halo),
+.place-piazza:focus-visible :deep(.halo) {
+  opacity: 1;
+}
 .board-zoomed .place {
   cursor: zoom-out;
 }
@@ -201,6 +212,9 @@ const boxStyle = (b) => ({ left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`,
 .place:hover .sign {
   transform: rotate(-3deg) scale(1.08);
 }
+.place-piazza .sign {
+  bottom: 22px;
+}
 .place-pesca .sign {
   bottom: auto;
   top: 24px;
@@ -210,7 +224,7 @@ const boxStyle = (b) => ({ left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`,
 .close {
   position: fixed;
   top: 16px;
-  right: 16px;
+  right: 80px; /* a destra c'è il pulsante dello schermo intero */
   z-index: 50;
   padding: 10px 16px 12px;
   border: 4px solid #2d2a4a;

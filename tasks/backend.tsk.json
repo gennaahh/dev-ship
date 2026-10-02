@@ -473,15 +473,33 @@
       "id": "chat",
       "title": "Gestire chat globale e di area",
       "description": "Canale globale, un canale per ogni luogo della città, più gilda, party e dungeon, tutti come stanze Colyseus.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
-        "Implementare una ChatRoom con filterBy per canale (globale, area, gilda, party)",
+        {
+          "title": "Implementare una ChatRoom con filterBy per canale (globale e area)",
+          "status": "done"
+        },
+        {
+          "title": "Chat della piazza dentro la PlazaRoom, con \"sta scrivendo\" e fumetti sopra i personaggi",
+          "status": "done"
+        },
+        "Aggiungere i canali di gilda e party",
         "Usare la chat interna delle stanze per lobby e dungeon",
-        "Entrare automaticamente nel canale di area quando si entra in un luogo (miniera, dungeon, ...)",
-        "Salvare gli ultimi N messaggi per canale in Redis e inviarli all'ingresso",
+        {
+          "title": "Entrare automaticamente nel canale di area quando si entra in un luogo (miniera, dungeon, ...)",
+          "status": "done"
+        },
+        {
+          "title": "Salvare gli ultimi N messaggi per canale in Redis e inviarli all'ingresso",
+          "status": "done"
+        },
         "Gestire i messaggi privati tra amici",
         "Rispettare i blocchi tra giocatori",
-        "Aggiungere filtro parole e limite di frequenza",
+        {
+          "title": "Limitare la frequenza dei messaggi in chat",
+          "status": "done"
+        },
+        "Aggiungere il filtro parole",
         "Permettere ai moderatori di silenziare e cancellare messaggi",
         "Permettere ai giocatori di segnalare messaggi"
       ]
@@ -509,9 +527,15 @@
       "steps": [
         "Scrivere un client API tipizzato a partire dagli schemi condivisi",
         "Aggiungere login e profilo nell'interfaccia",
-        "Scrivere un composable Vue che incapsula colyseus.js (connessione, stanza, stato reattivo)",
+        {
+          "title": "Scrivere un composable Vue che incapsula colyseus.js (connessione, stanza, stato reattivo)",
+          "status": "done"
+        },
         "Mostrare party, amici online e lobby nella città",
-        "Mostrare la chat di area dentro gli interni dei luoghi",
+        {
+          "title": "Mostrare la chat di area dentro gli interni dei luoghi",
+          "status": "done"
+        },
         "Mostrare inventario e valuta del giocatore",
         {
           "title": "Mantenere funzionante la modalità senza backend (demo: build senza VITE_API_URL e VITE_GAME_URL)",

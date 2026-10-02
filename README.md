@@ -8,7 +8,10 @@ The home page is a city. In the middle of the square stands a big billboard whos
 
 - Click the billboard to zoom in on it: the frame and a bit of the city stay in view. Up close the dev-ship shows its time slider, the tabs under the screen switch view by hand, and the rotation pauses while the pointer is on the screen. Click the city, press "Torna in città" or Esc to zoom back out.
 - Double-click the **Dev-ship** label under the billboard screen to open the dev-ship alone, full screen, without the rest of the interface (handy on a wall screen). Esc or another double-click closes it.
-- Around the billboard there are the **mine**, the **dungeon**, the **office**, the **museum** and the **fishing spot**. Click one to fly to its door and go inside (`#/miniera`, `#/dungeon`, `#/ufficio`, `#/museo`, `#/pesca`). The interiors are drafts for now.
+- Under the billboard there is the **square** (`#/piazza`). Inside it is seen from above like the rooms of Club Penguin: click where you want to go and your character walks there. A few demo characters stroll around and chat. The **shop** stall on the left opens a catalog where you can try colours and hats on a preview (buying will come with coins).
+- Around the billboard there are the **mine**, the **dungeon**, the **office**, the **museum** and the **fishing spot**. Click one to fly to its door and go inside (`#/miniera`, `#/dungeon`, `#/ufficio`, `#/museo`, `#/pesca`). The interiors are drafts for now; the `−` button folds their info panel.
+
+Characters are drawn by `src/city/Avatar.vue` from a "look" (`{ color, hat }`, see `src/city/avatar.js`), so customisation only has to save that object.
 
 ## The dev-ship
 
@@ -71,7 +74,7 @@ Then start frontend, API and game server together:
 bun run dev:all
 ```
 
-Login codes are not really sent: they end up in **Mailpit**, at http://localhost:8025. To try the multiplayer, log in with two different emails in two browsers (or a normal and a private window), then open `#/dungeon` in both.
+Login codes are not really sent: they end up in **Mailpit**, at http://localhost:8025. To try the multiplayer, log in with two different emails in two browsers (or a normal and a private window), then open `#/dungeon` or `#/piazza` in both. In the plaza you walk by clicking and chat with Enter: while someone types, dots appear over their head, then the message shows up in a speech bubble. Outside the buildings the chat is the city-wide one, inside each place has its own.
 
 `bun run infra:down` stops the services; the data stays in Docker volumes (`docker compose down -v` wipes it). The services listen on `127.0.0.1` only.
 
