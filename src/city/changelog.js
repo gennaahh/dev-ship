@@ -8,6 +8,7 @@ export const CHANGELOG = [
   {
     date: '2026-10-02',
     items: [
+      { tag: 'new', text: 'Il pannello dentro i luoghi resta aperto 2 secondi all\'ingresso, poi si rimpicciolisce sul nome: si riapre passandoci sopra col mouse (o col +).' },
       { tag: 'new', text: 'In alto a destra il pulsante per mettere e togliere lo schermo intero.' },
       { tag: 'new', backend: true, text: 'Chat: si scrive cliccandoci o premendo Invio. In città è quella di tutti (in alto a sinistra), dentro ogni luogo ha la sua (in basso a sinistra). Col cartellone zoomato si ripiega da sola.' },
       { tag: 'new', backend: true, text: 'In piazza si vedono gli altri giocatori: chi scrive ha i puntini sopra la testa, poi compare il fumetto col messaggio.' },

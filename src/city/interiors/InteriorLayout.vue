@@ -1,9 +1,9 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 // Cornice comune degli interni: la scena disegnata riempie lo schermo, sopra c'è il cartello
 // col nome del luogo, il pulsante per tornare in città e le idee per quando sarà giocabile.
-defineProps({
+const props = defineProps({
   place: { type: Object, required: true },
   // Idee di cosa ci sarà dentro: è ancora una bozza.
   plans: { type: Array, default: () => [] },
@@ -12,9 +12,44 @@ defineProps({
 })
 const emit = defineEmits(['leave'])
 
-// Il pannello si può ripiegare sul solo nome, per lasciare libera la scena.
-// Sui telefoni parte ripiegato: lì sta in alto, sopra la scena.
-const open = ref(!matchMedia('(max-width: 720px)').matches)
+// Il pannello resta aperto per INTRO_MS all'ingresso, poi si ripiega sul solo nome per
+// lasciare libera la scena: si riapre passandoci sopra col mouse. Sugli schermi touch, dove
+// non si passa sopra, il pulsante + lo tiene aperto (e − lo ripiega anche col mouse sopra).
+const INTRO_MS = 2000
+const intro = ref(true)
+const hover = ref(false)
+const pinned = ref(false)
+const open = computed(() => intro.value || hover.value || pinned.value)
+let introTimer = 0
+
+function toggle() {
+  if (open.value) {
+    intro.value = hover.value = pinned.value = false
+    clearTimeout(introTimer)
+  } else {
+    pinned.value = true
+  }
+}
+// Solo il mouse: un tocco sullo schermo manda anche pointerenter, e aprirebbe il pannello.
+const onEnter = (e) => {
+  if (e.pointerType === 'mouse') hover.value = true
+}
+const onLeave = (e) => {
+  if (e.pointerType === 'mouse') hover.value = false
+}
+
+// Da ripiegato è largo quanto il nome (a 30px, vedi .card.folded h1) più il margine per il
+// pulsante: si misura per far scorrere la larghezza, che con width: auto non si animerebbe.
+const title = ref(null)
+const foldedWidth = ref(null)
+function measure() {
+  const h1 = title.value
+  if (!h1) return
+  const ctx = document.createElement('canvas').getContext('2d')
+  ctx.font = `30px ${getComputedStyle(h1).fontFamily}`
+  // 60 + 22 di padding, 5 + 5 di bordo.
+  foldedWidth.value = Math.ceil(ctx.measureText(props.place.name).width) + 94
+}
 
 // Entrando, il focus resta sul pulsante del luogo nella città, qui sotto: lo si porta
 // sull'interno, così Invio apre la chat invece di cliccarlo di nuovo.
@@ -27,8 +62,15 @@ const onKey = (e) => {
 onMounted(() => {
   addEventListener('keydown', onKey)
   root.value.focus({ preventScroll: true })
+  introTimer = setTimeout(() => (intro.value = false), INTRO_MS)
+  measure()
+  // Il font del titolo può arrivare dopo: si rimisura.
+  document.fonts?.ready.then(measure)
 })
-onUnmounted(() => removeEventListener('keydown', onKey))
+onUnmounted(() => {
+  removeEventListener('keydown', onKey)
+  clearTimeout(introTimer)
+})
 </script>
 
 <template>
@@ -39,23 +81,31 @@ onUnmounted(() => removeEventListener('keydown', onKey))
 
     <button class="back" @click="emit('leave')">← Torna in città</button>
 
-    <div class="card" :class="{ folded: !open }" :style="{ '--tint': tint }">
+    <div
+      class="card"
+      :class="{ folded: !open }"
+      :style="{ '--tint': tint, '--folded-width': foldedWidth ? `${foldedWidth}px` : null }"
+      @pointerenter="onEnter"
+      @pointerleave="onLeave"
+    >
       <span class="draft">BOZZA</span>
       <button
         class="fold"
         :aria-expanded="open"
         :aria-label="open ? 'Ripiega il pannello' : 'Apri il pannello'"
-        @click="open = !open"
+        @click="toggle"
       >
         {{ open ? '−' : '+' }}
       </button>
-      <h1>{{ place.name }}</h1>
-      <template v-if="open">
-        <p class="tagline">{{ place.tagline }}</p>
-        <ul v-if="plans.length">
-          <li v-for="p in plans" :key="p">{{ p }}</li>
-        </ul>
-      </template>
+      <h1 ref="title">{{ place.name }}</h1>
+      <div class="more" :inert="!open">
+        <div>
+          <p class="tagline">{{ place.tagline }}</p>
+          <ul v-if="plans.length">
+            <li v-for="p in plans" :key="p">{{ p }}</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -109,6 +159,9 @@ onUnmounted(() => removeEventListener('keydown', onKey))
   background: color-mix(in srgb, var(--tint) 88%, transparent);
   box-shadow: 0 6px 0 #2d2a4a;
   color: #fff8e6;
+  transition:
+    width 0.35s ease,
+    padding 0.35s ease;
 }
 /* Quando l'account e le spie lasciano il centro (.hud in App.vue) il pannello sale sopra
    di loro; sui telefoni, dove in basso ci sono anche la chat, va sotto al pulsante per tornare. */
@@ -124,11 +177,39 @@ onUnmounted(() => removeEventListener('keydown', onKey))
   }
 }
 .card.folded {
-  width: auto;
+  /* Senza misura (es. prima del primo frame) resta larga: si ripiega solo in altezza. */
+  width: min(var(--folded-width, 380px), calc(100% - 32px));
   padding: 10px 22px 12px 60px;
 }
 .card.folded h1 {
   font-size: 30px;
+}
+/* Il resto del pannello scorre in altezza (da 1fr a 0fr) e sfuma. Il contenuto ha la larghezza
+   del pannello aperto, così il testo non va a capo di nuovo mentre si stringe. */
+.more {
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.35s ease;
+}
+.more > div {
+  width: calc(min(380px, 100vw - 32px) - 54px);
+  min-height: 0;
+  transition: opacity 0.25s ease;
+}
+.folded .more {
+  grid-template-rows: 0fr;
+}
+.folded .more > div {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card h1,
+  .more,
+  .more > div {
+    transition: none;
+  }
 }
 .fold {
   position: absolute;
@@ -164,6 +245,8 @@ h1 {
   font-weight: normal;
   color: #ffd54a;
   text-shadow: 0 4px 0 #2d2a4a;
+  white-space: nowrap;
+  transition: font-size 0.35s ease;
 }
 .tagline {
   margin: 4px 0 0;
