@@ -2,17 +2,19 @@
 import { computed, ref } from 'vue'
 import DevShip from '../components/DevShip.vue'
 import Leaderboard from './Leaderboard.vue'
+import Changelog from './Changelog.vue'
 
 const props = defineProps({
   zoomed: { type: Boolean, default: false },
 })
 const emit = defineEmits(['zoom'])
 
-// Lo schermo alterna la dev-ship e la classifica ogni 5 secondi. Il cambio lo dà la fine
+// Lo schermo alterna dev-ship, classifica e changelog ogni 5 secondi. Il cambio lo dà la fine
 // dell'animazione della barra di avanzamento: mettendola in pausa si ferma anche la rotazione.
 const VIEWS = [
   { id: 'ship', label: 'Dev-ship' },
   { id: 'leaderboard', label: 'Classifica' },
+  { id: 'changelog', label: 'Changelog' },
 ]
 const current = ref(0)
 // Cambia a ogni giro, così la barra riparte anche quando si sceglie a mano la stessa vista.
@@ -67,9 +69,13 @@ function onClick() {
           <div class="view" :class="{ active: view === 'leaderboard' }">
             <Leaderboard />
           </div>
+          <div class="view" :class="{ active: view === 'changelog' }">
+            <Changelog :active="view === 'changelog'" />
+          </div>
         </div>
         <div :key="cycle" class="glitch" aria-hidden="true" />
         <div class="glare" aria-hidden="true" />
+        <span v-if="paused" class="pause">❚❚ in pausa</span>
       </div>
 
       <div class="tabs">
@@ -93,7 +99,6 @@ function onClick() {
             />
           </span>
         </button>
-        <span v-if="paused" class="pause">❚❚ in pausa</span>
       </div>
     </div>
   </div>
@@ -169,7 +174,7 @@ function onClick() {
 .rivet.bl { left: 4px; bottom: 4px; }
 .rivet.br { right: 4px; bottom: 4px; }
 
-/* Lo schermo è 576 × 324: dentro, la dev-ship e la classifica girano a 1280 × 720 scalate. */
+/* Lo schermo è 576 × 324: dentro, le schermate girano a 1280 × 720 scalate. */
 .screen {
   position: absolute;
   left: 12px;
@@ -239,6 +244,7 @@ function onClick() {
   height: 30px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
 }
 .tab {
@@ -253,6 +259,7 @@ function onClick() {
   color: #b9b6d8;
   font: inherit;
   font-size: 14px;
+  white-space: nowrap;
   cursor: inherit;
 }
 .zoomed .tab {
@@ -295,8 +302,13 @@ function onClick() {
   to { transform: scaleX(1); }
 }
 .pause {
-  margin-left: auto;
-  color: #fff3a8;
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 4;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 13px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 </style>
