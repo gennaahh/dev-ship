@@ -63,7 +63,10 @@
                   "title": "Riconnessione dopo una caduta su Bun",
                   "status": "done"
                 },
-                "Driver e presence Redis su Bun"
+                {
+                  "title": "Driver e presence Redis su Bun (due processi, stanze distribuite, caduta di un processo)",
+                  "status": "done"
+                }
               ]
             },
             "Autenticazione: Better Auth (login con GitHub per il team) o JWT fatto in casa",
@@ -109,7 +112,7 @@
         },
         "Spostare il frontend Vue in apps/web senza rompere build e deploy su Netlify",
         "Configurare Netlify con cartella base apps/web e comando ignore per non ricostruire a ogni modifica del backend",
-        "Configurare TypeScript per api, game e shared (decoratori abilitati per @colyseus/schema)",
+        "Configurare TypeScript per api, game e shared (stato Colyseus con schema(), senza decoratori)",
         "Spostare in packages/shared il generatore con seme di weekRandom.js, servirà anche al server",
         "Aggiungere lint e formatter (Biome o ESLint + Prettier)",
         {
@@ -251,7 +254,10 @@
           "status": "done"
         },
         "Verificare in onAuth il token emesso dall'API",
-        "Usare @colyseus/redis-presence e @colyseus/redis-driver per scalare su più processi",
+        {
+          "title": "Usare @colyseus/redis-presence e @colyseus/redis-driver per scalare su più processi (attivi se c'è REDIS_URL)",
+          "status": "done"
+        },
         "Definire le classi di stato con @colyseus/schema e condividerle con il client",
         {
           "title": "Definire i messaggi client → server con schemi Zod e rifiutare quelli non validi",

@@ -9,6 +9,8 @@
   "dependencies": {
     "@colyseus/bun-websockets": "^0.18.3",
     "@colyseus/core": "^0.18.18",
+    "@colyseus/redis-driver": "^0.18.4",
+    "@colyseus/redis-presence": "^0.18.5",
     "@colyseus/schema": "^5.0.35",
     "zod": "^4.6.5"
   },

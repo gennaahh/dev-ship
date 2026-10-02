@@ -82,6 +82,12 @@ bun run dev:api   # API (Hono on Bun, apps/api) on http://localhost:3000, health
 bun run dev:game  # game server (Colyseus on Bun, apps/game) on ws://localhost:2567, healthcheck at /__healthcheck
 ```
 
-By default the frontend looks for both servers on the host the page was opened from; set `VITE_API_URL` and `VITE_GAME_URL` to point it elsewhere. Both servers read `PORT`, the API also `CORS_ORIGIN`. To try the multiplayer, open `#/dungeon` in two browser tabs.
+By default the frontend looks for both servers on the host the page was opened from; set `VITE_API_URL` and `VITE_GAME_URL` to point it elsewhere. Both servers read `PORT`, the API also `CORS_ORIGIN`. The game server keeps rooms in memory unless `REDIS_URL` is set: then several processes share matchmaking and presence through Redis, and each one needs `PUBLIC_ADDRESS` (the `host:port` clients use to reach it), for example:
+
+```bash
+cd apps/game
+REDIS_URL=redis://localhost:6379 PORT=2567 PUBLIC_ADDRESS=localhost:2567 bun src/index.ts
+REDIS_URL=redis://localhost:6379 PORT=2568 PUBLIC_ADDRESS=localhost:2568 bun src/index.ts
+``` To try the multiplayer, open `#/dungeon` in two browser tabs.
 
 The build puts all JS and CSS inside `dist/index.html`, so the file also works when opened directly from disk.

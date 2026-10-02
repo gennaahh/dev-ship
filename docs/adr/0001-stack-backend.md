@@ -57,7 +57,7 @@ Il backend deve essere in JavaScript/TypeScript, lo stesso linguaggio del fronte
   - SDK client `colyseus.js`, monitor, playground e strumento di test di carico.
 
   L'API resta leggera come nell'opzione A.
-- **Contro:** due servizi invece di uno. È una dipendenza da un framework specifico. Colyseus nasce per Node, e su Bun va verificato.
+- **Contro:** due servizi invece di uno. È una dipendenza da un framework specifico. Colyseus nasce per Node, e su Bun va verificato (verificato nel prototipo, vedi "Decisioni prese durante il prototipo").
 
 ### D: Nakama (o Supabase)
 
@@ -105,6 +105,7 @@ Scegliamo l'**opzione C**. Ci sono due servizi TypeScript nello stesso monorepo,
 | Monorepo | Workspace di Bun: `apps/web`, `apps/api`, `apps/game`, `packages/shared`, `packages/domain` |
 | API HTTP | Hono, con OpenAPI generata da `@hono/zod-openapi` |
 | Server realtime | Colyseus, con stato in `@colyseus/schema` |
+| Runtime del game server | Bun, con `@colyseus/bun-websockets` |
 | Database | PostgreSQL |
 | ORM e migrazioni | Drizzle |
 | Stato effimero e pub/sub | Redis (o Valkey) |
@@ -179,7 +180,6 @@ Il repository oggi si chiama `dev-ship`, ma contiene tutta la città. Il nome va
 - Due servizi da deployare e monitorare invece di uno.
 - Colyseus impone il suo modello (stanze, schema, matchmaker): la logica di gioco è legata al framework. Per limitare il problema, la logica di combattimento e di generazione va in funzioni pure, separate dalle classi `Room`.
 - Ogni processo Colyseus deve essere raggiungibile dal client al proprio indirizzo pubblico (`publicAddress`). Questo restringe la scelta dell'hosting e rende più delicati i deploy, perché bisogna chiudere con calma le run in corso.
-- `@colyseus/schema` usa i decoratori: va configurato TypeScript di conseguenza, anche nel frontend.
 - Il frontend non sarà più un solo file statico che funziona da disco. La modalità demo senza backend va mantenuta di proposito.
 - Con il monorepo, deploy e CI vanno configurati per percorso, perché non ogni modifica ricostruisca tutto. Chi ha accesso al repository vede tutto il codice.
 
@@ -189,12 +189,28 @@ Si prendono durante il prototipo e si registrano in ADR successivi, o aggiornand
 
 | Tema | Opzioni | Come decidere |
 | --- | --- | --- |
-| Runtime del game server | Bun con `@colyseus/bun-websockets` oppure Node 22 LTS | Prototipo con due giocatori, riconnessione e driver Redis. Se qualcosa non va su Bun, il game server usa Node e l'API resta su Bun. |
 | Dungeon in tempo reale o a turni | Azione in tempo reale (20–30 tick al secondo, interpolazione e predizione nel client) oppure turni (eventi discreti, niente predizione) | Dal design del gameplay. Cambia carico, complessità del client e hosting. |
 | Autenticazione | Better Auth (adattatori per Hono e Drizzle, login con GitHub) oppure sessioni e JWT scritti da noi | Prototipo del login con GitHub e del token per le stanze. |
 | Job in background | pg-boss (solo PostgreSQL) oppure BullMQ (Redis) | Preferenza per pg-boss se basta, per non legare i job a Redis. |
 | Hosting | Fly.io, Railway, Render. Database: Neon, Supabase, Fly Postgres. Redis: Upstash, Fly, Railway | WebSocket persistenti, indirizzo per singolo processo, costi. Netlify resta per il frontend. |
 | Nome del repository | Tenere `dev-ship` o rinominarlo (per esempio `dev-city`) | Da decidere prima del passaggio ad `apps/`. Dopo il cambio di nome il sito su Netlify va ricollegato. |
+
+## Decisioni prese durante il prototipo
+
+### Runtime del game server: Bun (2026-10-02)
+
+Era aperta la scelta tra Bun con `@colyseus/bun-websockets` e Node 22 LTS. Il criterio era un prototipo con due giocatori, riconnessione e driver Redis. Con Colyseus 0.18 su Bun 1.4 sono passate tutte le prove:
+
+- due giocatori nella stessa `DungeonRoom` si vedono muovere, con il server che calcola le posizioni a 20 tick al secondo;
+- un client che cade (processo ucciso) resta nello stato per 15 secondi e rientra con la stessa sessione;
+- con `@colyseus/redis-presence` e `@colyseus/redis-driver`, due processi condividono il matchmaking: client entrati da processi diversi finiscono nella stessa stanza, le stanze nuove si distribuiscono sui processi e la riconnessione funziona passando dall'altro processo;
+- se il processo che ospita una stanza muore all'improvviso, dopo circa 4 secondi si entra dall'altro processo, dove nasce la nuova stanza.
+
+Il game server quindi gira su Bun come l'API. Si torna a Node se un aggiornamento di Bun o di Colyseus rompe una di queste prove.
+
+### Niente decoratori per lo stato (2026-10-02)
+
+Tra i contro c'era che `@colyseus/schema` usa i decoratori, da abilitare in TypeScript anche nel frontend. Dalla versione 5 di `@colyseus/schema` (Colyseus 0.18) lo stato si definisce con `schema()` e i costruttori `t.*`, senza decoratori né configurazione del compilatore, con lo stesso formato sul filo. Il prototipo usa questa forma, e il frontend decodifica lo stato senza conoscerne le classi.
 
 ## Quando rivedere questa decisione
 
