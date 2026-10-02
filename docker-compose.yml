@@ -1,0 +1,38 @@
+# Servizi per lo sviluppo locale: PostgreSQL per i dati persistenti, Redis per presenza,
+# classifiche e driver di Colyseus (vedi docs/adr/0001-stack-backend.md).
+# Le porte sono legate a 127.0.0.1: con bun run dev:lan si espongono le app, non i database.
+name: dev-city
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: devcity
+      POSTGRES_PASSWORD: devcity
+      POSTGRES_DB: devcity
+    ports:
+      - 127.0.0.1:5432:5432
+    volumes:
+      # Dalla 18 l'immagine tiene i dati in /var/lib/postgresql/<versione>/docker.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U devcity -d devcity]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - 127.0.0.1:6379:6379
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  postgres-data:
+  redis-data:

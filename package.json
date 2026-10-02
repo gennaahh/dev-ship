@@ -12,6 +12,8 @@
     "dev:game": "bun run --filter @dev-city/game dev",
     "dev:all": "bun run --parallel dev dev:api dev:game",
     "dev:lan": "bun run --parallel 'bunx --bun vite --host' dev:api dev:game",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down",
     "build": "bunx --bun vite build",
     "preview": "bunx --bun vite preview"
   },

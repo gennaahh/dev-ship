@@ -51,6 +51,15 @@ bun run dev      # dev server with hot reload
 bun run build    # builds a single self-contained dist/index.html
 ```
 
+The backend needs PostgreSQL and Redis, which run in Docker (`docker-compose.yml`):
+
+```bash
+bun run infra:up    # starts PostgreSQL 18 and Redis 8 and waits until they are ready
+bun run infra:down  # stops them; the data stays in Docker volumes
+```
+
+They listen on `127.0.0.1` only (ports 5432 and 6379). Connection strings are in `.env.example`: copy it to `.env`, which is not committed. To wipe the data, run `docker compose down -v`.
+
 To run frontend, API and game server together:
 
 ```bash

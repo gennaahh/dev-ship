@@ -112,7 +112,10 @@
         "Configurare TypeScript per api, game e shared (decoratori abilitati per @colyseus/schema)",
         "Spostare in packages/shared il generatore con seme di weekRandom.js, servirà anche al server",
         "Aggiungere lint e formatter (Biome o ESLint + Prettier)",
-        "Scrivere un docker-compose con PostgreSQL e Redis per lo sviluppo locale",
+        {
+          "title": "Scrivere un docker-compose con PostgreSQL e Redis per lo sviluppo locale (bun run infra:up)",
+          "status": "done"
+        },
         {
           "title": "Avviare api, game e web insieme con un solo comando (bun run dev:all)",
           "status": "done"
