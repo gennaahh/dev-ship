@@ -57,6 +57,14 @@ To run frontend, API and game server together:
 bun run dev:all
 ```
 
+To try it with other PCs on your local network, use instead:
+
+```bash
+bun run dev:lan
+```
+
+Vite prints the `Network` address to open on the other PCs (for example `http://192.168.1.10:5173`). The page looks for the API and the game server on the same host it was opened from, so nothing else needs to be configured. If the other PCs can't connect, check that the firewall lets through ports 5173, 3000 and 2567 (with ufw: `sudo ufw allow 5173,3000,2567/tcp`).
+
 Or one at a time, each in its own terminal:
 
 ```bash
@@ -65,6 +73,6 @@ bun run dev:api   # API (Hono on Bun, apps/api) on http://localhost:3000, health
 bun run dev:game  # game server (Colyseus on Bun, apps/game) on ws://localhost:2567, healthcheck at /__healthcheck
 ```
 
-The frontend uses those addresses by default; set `VITE_API_URL` and `VITE_GAME_URL` to point it elsewhere. Both servers read `PORT`, the API also `CORS_ORIGIN`. To try the multiplayer, open `#/dungeon` in two browser tabs.
+By default the frontend looks for both servers on the host the page was opened from; set `VITE_API_URL` and `VITE_GAME_URL` to point it elsewhere. Both servers read `PORT`, the API also `CORS_ORIGIN`. To try the multiplayer, open `#/dungeon` in two browser tabs.
 
 The build puts all JS and CSS inside `dist/index.html`, so the file also works when opened directly from disk.
