@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import ApiStatus from './components/ApiStatus.vue'
+import ServiceStatus from './components/ServiceStatus.vue'
 import CityView from './city/CityView.vue'
 import { PLACES } from './city/places.js'
 
@@ -28,7 +28,7 @@ function leave() {
   <Transition name="interior">
     <component :is="place.interior" v-if="place" :key="place.id" :place="place" @leave="leave" />
   </Transition>
-  <ApiStatus />
+  <ServiceStatus />
 </template>
 
 <style>

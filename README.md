@@ -35,7 +35,11 @@ The weather changes too: every day, for one hour picked at random, there is a **
 
 The position follows your local time. Use the slider at the top of the zoomed billboard to simulate any moment of the week, and press "Torna all'ora attuale" to go back to live time. You can also open a given moment directly with `?at=2026-09-23T13:30`.
 
-The backend is being prototyped (see `docs/adr/0001-stack-backend.md`). For now there is only an API with a healthcheck: the badge in the bottom left corner shows whether the app can reach it (green: online, red: offline).
+The backend is being prototyped (see `docs/adr/0001-stack-backend.md`). For now there are:
+
+- an API with a healthcheck;
+- a status badge in the bottom left corner, with one light for the API and one for the game server (green: online, red: offline);
+- a game server: inside the dungeon everyone who is there sees the others move (WASD or arrow keys). Without the game server the dungeon works as before, with a notice at the top, and joins by itself as soon as the server is back.
 
 ## Development
 
@@ -47,12 +51,20 @@ bun run dev      # dev server with hot reload
 bun run build    # builds a single self-contained dist/index.html
 ```
 
-To run the API too (Hono on Bun, in `apps/api`), in a second terminal:
+To run frontend, API and game server together:
 
 ```bash
-bun run dev:api  # API on http://localhost:3000, healthcheck at /health
+bun run dev:all
 ```
 
-The frontend calls `http://localhost:3000` by default; set `VITE_API_URL` to point it elsewhere. The API reads `PORT` and `CORS_ORIGIN`.
+Or one at a time, each in its own terminal:
+
+```bash
+bun run dev       # frontend
+bun run dev:api   # API (Hono on Bun, apps/api) on http://localhost:3000, healthcheck at /health
+bun run dev:game  # game server (Colyseus on Bun, apps/game) on ws://localhost:2567, healthcheck at /__healthcheck
+```
+
+The frontend uses those addresses by default; set `VITE_API_URL` and `VITE_GAME_URL` to point it elsewhere. Both servers read `PORT`, the API also `CORS_ORIGIN`. To try the multiplayer, open `#/dungeon` in two browser tabs.
 
 The build puts all JS and CSS inside `dist/index.html`, so the file also works when opened directly from disk.

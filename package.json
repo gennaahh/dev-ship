@@ -9,10 +9,13 @@
   "scripts": {
     "dev": "bunx --bun vite",
     "dev:api": "bun run --filter @dev-city/api dev",
+    "dev:game": "bun run --filter @dev-city/game dev",
+    "dev:all": "bun run --parallel dev dev:api dev:game",
     "build": "bunx --bun vite build",
     "preview": "bunx --bun vite preview"
   },
   "dependencies": {
+    "@colyseus/sdk": "^0.18.4",
     "vue": "^3.5.0"
   },
   "devDependencies": {

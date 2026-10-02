@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+import { useDungeonRoom } from '../../composables/useDungeonRoom.js'
 import InteriorLayout from './InteriorLayout.vue'
 
 defineProps({ place: { type: Object, required: true } })
@@ -14,6 +16,16 @@ const bugs = [
   { x: 800, y: 620, s: 0.8, c: '#ff6fb5' },
   { x: 1120, y: 720, s: 1, c: '#ffd54a' },
 ]
+
+// Prototipo multigiocatore: chi è nel dungeon si vede muovere sul pavimento.
+const { status, players } = useDungeonRoom()
+const statusText = computed(() => {
+  if (status.value === 'connecting') return 'Connessione al server di gioco…'
+  if (status.value === 'reconnecting') return 'Connessione persa, riprovo…'
+  if (status.value === 'offline') return 'Server di gioco offline: sei da solo nel dungeon, riprovo…'
+  const n = players.value.length
+  return `${n === 1 ? 'Sei da solo' : `${n} giocatori`} · muoviti con WASD o con le frecce`
+})
 </script>
 
 <template>
@@ -65,12 +77,61 @@ const bugs = [
             <circle cx="13" cy="-38" r="4" fill="#2d2a4a" stroke="none" />
           </g>
         </g>
+        <!-- Giocatori -->
+        <g v-for="p in players" :key="p.id" :transform="`translate(${p.x} ${p.y})`">
+          <ellipse cx="0" cy="4" rx="34" ry="10" fill="#120f1f" stroke="none" opacity="0.5" />
+          <path d="M -30 0 Q -30 -70 0 -70 Q 30 -70 30 0 Z" :fill="p.color" />
+          <circle cx="-10" cy="-44" r="7" fill="#fff" />
+          <circle cx="10" cy="-44" r="7" fill="#fff" />
+          <circle cx="-9" cy="-43" r="3" fill="#2d2a4a" stroke="none" />
+          <circle cx="11" cy="-43" r="3" fill="#2d2a4a" stroke="none" />
+          <text class="name" :class="{ me: p.me }" y="-86" text-anchor="middle">
+            {{ p.me ? `${p.name} (tu)` : p.name }}
+          </text>
+        </g>
       </g>
     </svg>
+    <div class="room-status" :class="status" role="status" aria-live="polite">{{ statusText }}</div>
   </InteriorLayout>
 </template>
 
 <style scoped>
+.name {
+  fill: #fff8e6;
+  stroke: #2d2a4a;
+  stroke-width: 6px;
+  paint-order: stroke;
+  font-size: 22px;
+}
+.name.me {
+  fill: #ffd54a;
+}
+.room-status {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  translate: -50% 0;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  padding: 8px 16px 10px;
+  border: 4px solid #2d2a4a;
+  border-radius: 14px;
+  background: #fff8e6;
+  box-shadow: 0 4px 0 #2d2a4a;
+  color: #2d2a4a;
+  font-size: 17px;
+  text-align: center;
+}
+.room-status.offline,
+.room-status.reconnecting {
+  background: #ffb4a6;
+}
+/* Su schermi stretti scende sotto il pulsante per tornare in città. */
+@media (max-width: 720px) {
+  .room-status {
+    top: 84px;
+  }
+}
 .fire {
   transform-box: fill-box;
   transform-origin: 50% 100%;

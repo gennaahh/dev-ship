@@ -52,14 +52,37 @@
               "status": "done"
             },
             "Runtime dell'API: Bun",
-            "Runtime del game server: verificare Colyseus su Bun (@colyseus/bun-websockets), altrimenti Node 22 LTS",
+            {
+              "title": "Runtime del game server: verificare Colyseus su Bun (@colyseus/bun-websockets), altrimenti Node 22 LTS",
+              "steps": [
+                {
+                  "title": "Due giocatori nella stessa stanza su Bun",
+                  "status": "done"
+                },
+                {
+                  "title": "Riconnessione dopo una caduta su Bun",
+                  "status": "done"
+                },
+                "Driver e presence Redis su Bun"
+              ]
+            },
             "Autenticazione: Better Auth (login con GitHub per il team) o JWT fatto in casa",
             "Job in background e cron: BullMQ o pg-boss",
             "Hosting: Fly.io, Railway o Render (servono WebSocket persistenti e un indirizzo per ogni processo Colyseus)"
           ]
         },
         "Decidere se i dungeon sono in tempo reale (azione) o a turni: cambia tick rate e carico del server",
-        "Fare un prototipo: login sull'API, ingresso in una stanza Colyseus con token, due giocatori che si vedono muovere",
+        {
+          "title": "Fare un prototipo",
+          "steps": [
+            "Login sull'API",
+            "Ingresso in una stanza Colyseus con token",
+            {
+              "title": "Due giocatori che si vedono muovere (DungeonRoom su Bun, interno del dungeon)",
+              "status": "done"
+            }
+          ]
+        },
         {
           "title": "Scrivere l'ADR con la scelta e le alternative scartate (docs/adr/0001-stack-backend.md)",
           "status": "done"
@@ -70,17 +93,30 @@
       "id": "monorepo-setup",
       "title": "Preparare monorepo e strumenti",
       "description": "Frontend, API, game server e codice condiviso nello stesso repository.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
         "Decidere se rinominare il repository (dev-ship → dev-city) prima di spostare il codice",
-        "Configurare i workspace di Bun (apps/web, apps/api, apps/game, packages/shared, packages/domain)",
+        {
+          "title": "Configurare i workspace di Bun (apps/web, apps/api, apps/game, packages/shared, packages/domain)",
+          "steps": [
+            {
+              "title": "apps/api e apps/game",
+              "status": "done"
+            },
+            "apps/web",
+            "packages/shared e packages/domain"
+          ]
+        },
         "Spostare il frontend Vue in apps/web senza rompere build e deploy su Netlify",
         "Configurare Netlify con cartella base apps/web e comando ignore per non ricostruire a ogni modifica del backend",
         "Configurare TypeScript per api, game e shared (decoratori abilitati per @colyseus/schema)",
         "Spostare in packages/shared il generatore con seme di weekRandom.js, servirà anche al server",
         "Aggiungere lint e formatter (Biome o ESLint + Prettier)",
         "Scrivere un docker-compose con PostgreSQL e Redis per lo sviluppo locale",
-        "Avviare api, game e web insieme con un solo comando",
+        {
+          "title": "Avviare api, game e web insieme con un solo comando (bun run dev:all)",
+          "status": "done"
+        },
         "Gestire la configurazione con variabili d'ambiente validate all'avvio",
         "Impostare la CI (lint, test, build) su GitHub Actions con filtri per percorso",
         "Aggiornare il README con le istruzioni per l'avvio del backend"
@@ -205,15 +241,27 @@
       "id": "game-server",
       "title": "Preparare il game server Colyseus",
       "description": "Servizio realtime comune a party, lobby, dungeon e chat.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
-        "Creare apps/game con Colyseus e il transport scelto (Bun o Node)",
+        {
+          "title": "Creare apps/game con Colyseus e il transport scelto (Bun o Node)",
+          "status": "done"
+        },
         "Verificare in onAuth il token emesso dall'API",
         "Usare @colyseus/redis-presence e @colyseus/redis-driver per scalare su più processi",
         "Definire le classi di stato con @colyseus/schema e condividerle con il client",
-        "Definire i messaggi client → server con schemi Zod e rifiutare quelli non validi",
-        "Gestire la riconnessione con allowReconnection",
-        "Limitare la frequenza dei messaggi per client",
+        {
+          "title": "Definire i messaggi client → server con schemi Zod e rifiutare quelli non validi",
+          "status": "done"
+        },
+        {
+          "title": "Gestire la riconnessione con allowReconnection",
+          "status": "done"
+        },
+        {
+          "title": "Limitare la frequenza dei messaggi per client",
+          "status": "done"
+        },
         "Tenere la presenza dei giocatori online in Redis",
         "Abilitare il playground di Colyseus solo in sviluppo",
         "Testare il carico con @colyseus/loadtest"
@@ -238,7 +286,7 @@
       "id": "coop-dungeons",
       "title": "Costruire i dungeon cooperativi",
       "description": "Stanze Colyseus autoritative in cui il gruppo affronta i bug-mostri insieme.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
         {
           "title": "Progettare il gameplay",
@@ -255,7 +303,10 @@
             "Modellare lo stato (giocatori, mostri, stanze, bottino) con @colyseus/schema",
             "Generare il dungeon da un seme condiviso tra server e client",
             "Far girare la simulazione con setSimulationInterval a un tick rate fisso",
-            "Applicare lato server gli input dei giocatori, senza fidarsi delle posizioni inviate dal client",
+            {
+              "title": "Applicare lato server gli input dei giocatori, senza fidarsi delle posizioni inviate dal client",
+              "status": "done"
+            },
             "Muovere i mostri con un'IA semplice lato server",
             "Gestire morte, rianimazione e uscita anticipata di un giocatore",
             "Mettere in pausa o far proseguire la run quando qualcuno si disconnette"
@@ -272,8 +323,14 @@
         {
           "title": "Mostrarlo nel frontend",
           "steps": [
-            "Collegare DungeonInterior.vue alla stanza con colyseus.js",
-            "Interpolare le posizioni degli altri giocatori per un movimento fluido",
+            {
+              "title": "Collegare DungeonInterior.vue alla stanza con colyseus.js",
+              "status": "done"
+            },
+            {
+              "title": "Interpolare le posizioni degli altri giocatori per un movimento fluido",
+              "status": "done"
+            },
             "Prevedere in locale il movimento del proprio personaggio"
           ]
         }

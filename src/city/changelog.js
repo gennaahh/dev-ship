@@ -5,7 +5,8 @@ export const CHANGELOG = [
   {
     date: '2026-10-02',
     items: [
-      { tag: 'new', text: 'In basso a sinistra la spia dello stato del backend: online o offline.' },
+      { tag: 'new', text: 'Nel dungeon ci si vede muovere tra giocatori (prototipo multigiocatore, WASD o frecce).' },
+      { tag: 'new', text: 'In basso a sinistra le spie del backend: una per l\'API e una per il server di gioco.' },
       { tag: 'new', text: 'Il cartellone ha una terza schermata: questo changelog, scorrevole da vicino.' },
       { tag: 'docs', text: 'Piano del backend: ADR sullo stack e task board.' },
       { tag: 'new', text: 'La città: piazza con cartellone che alterna dev-ship e classifica (demo), zoom al clic.' },
