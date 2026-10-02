@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useDungeonRoom } from '../../composables/useDungeonRoom.js'
+import { BACKEND_ENABLED } from '../../config.js'
 import InteriorLayout from './InteriorLayout.vue'
 
 defineProps({ place: { type: Object, required: true } })
@@ -18,7 +19,8 @@ const bugs = [
 ]
 
 // Prototipo multigiocatore: chi è nel dungeon si vede muovere sul pavimento.
-const { status, players } = useDungeonRoom()
+// In modalità demo (senza backend) il dungeon resta la bozza statica.
+const { status, players } = BACKEND_ENABLED ? useDungeonRoom() : { status: ref(null), players: ref([]) }
 const statusText = computed(() => {
   if (status.value === 'connecting') return 'Connessione al server di gioco…'
   if (status.value === 'login') return 'Accedi (in basso a sinistra) per vedere gli altri giocatori'
@@ -92,7 +94,7 @@ const statusText = computed(() => {
         </g>
       </g>
     </svg>
-    <div class="room-status" :class="status" role="status" aria-live="polite">{{ statusText }}</div>
+    <div v-if="status" class="room-status" :class="status" role="status" aria-live="polite">{{ statusText }}</div>
   </InteriorLayout>
 </template>
 

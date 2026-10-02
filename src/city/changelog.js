@@ -1,14 +1,17 @@
 // Novità mostrate sul cartellone, dalla più recente. Va aggiornato a ogni modifica visibile:
 // si aggiunge una voce in cima al giorno giusto (o un nuovo giorno in testa alla lista).
 // tag: 'new' per le novità, 'fix' per le correzioni, 'docs' per documentazione e piani.
+// backend: true per le novità che senza backend non si vedono: in modalità demo sono nascoste.
+import { BACKEND_ENABLED } from '../config.js'
+
 export const CHANGELOG = [
   {
     date: '2026-10-02',
     items: [
-      { tag: 'new', text: 'Si entra con l\'email: arriva un codice di 6 cifre, niente password (in basso a sinistra, "Accedi").' },
-      { tag: 'new', text: 'Nel dungeon si gioca insieme solo da loggati, ognuno con il proprio nome.' },
-      { tag: 'new', text: 'Nel dungeon ci si vede muovere tra giocatori (prototipo multigiocatore, WASD o frecce).' },
-      { tag: 'new', text: 'In basso a sinistra le spie del backend: una per l\'API e una per il server di gioco.' },
+      { tag: 'new', backend: true, text: 'Si entra con l\'email: arriva un codice di 6 cifre, niente password (in basso a sinistra, "Accedi").' },
+      { tag: 'new', backend: true, text: 'Nel dungeon si gioca insieme solo da loggati, ognuno con il proprio nome.' },
+      { tag: 'new', backend: true, text: 'Nel dungeon ci si vede muovere tra giocatori (prototipo multigiocatore, WASD o frecce).' },
+      { tag: 'new', backend: true, text: 'In basso a sinistra le spie del backend: una per l\'API e una per il server di gioco.' },
       { tag: 'new', text: 'Il cartellone ha una terza schermata: questo changelog, scorrevole da vicino.' },
       { tag: 'docs', text: 'Piano del backend: ADR sullo stack e task board.' },
       { tag: 'new', text: 'La città: piazza con cartellone che alterna dev-ship e classifica (demo), zoom al clic.' },
@@ -30,3 +33,9 @@ export const CHANGELOG = [
     ],
   },
 ]
+
+// Le voci da mostrare: senza backend si tolgono quelle backend (e i giorni rimasti vuoti).
+export const VISIBLE_CHANGELOG = CHANGELOG.map((day) => ({
+  ...day,
+  items: day.items.filter((item) => BACKEND_ENABLED || !item.backend),
+})).filter((day) => day.items.length)

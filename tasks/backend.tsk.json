@@ -505,7 +505,7 @@
       "id": "frontend-integration",
       "title": "Collegare il frontend Vue",
       "description": "Portare login, dati veri e realtime dentro la città.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
         "Scrivere un client API tipizzato a partire dagli schemi condivisi",
         "Aggiungere login e profilo nell'interfaccia",
@@ -513,7 +513,10 @@
         "Mostrare party, amici online e lobby nella città",
         "Mostrare la chat di area dentro gli interni dei luoghi",
         "Mostrare inventario e valuta del giocatore",
-        "Mantenere funzionante la modalità senza backend (demo offline)"
+        {
+          "title": "Mantenere funzionante la modalità senza backend (demo: build senza VITE_API_URL e VITE_GAME_URL)",
+          "status": "done"
+        }
       ]
     },
     {
@@ -529,7 +532,7 @@
         "Creare le immagini Docker di api e game",
         "Eseguire le migrazioni in automatico al deploy",
         "Gestire i deploy del game server senza interrompere le run in corso (graceful shutdown)",
-        "Configurare gli URL di API e game server nel frontend su Netlify",
+        "Configurare gli URL di API e game server nel frontend su Netlify (VITE_API_URL e VITE_GAME_URL: accendono anche il backend)",
         "Aggiungere monitoraggio errori (Sentry) e metriche",
         "Configurare e provare il ripristino dei backup del database"
       ]

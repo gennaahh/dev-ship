@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { CHANGELOG } from './changelog.js'
+import { VISIBLE_CHANGELOG } from './changelog.js'
 
 const props = defineProps({
   active: { type: Boolean, default: false },
@@ -32,7 +32,7 @@ const formatDate = (iso) =>
     </header>
 
     <div ref="scroller" class="scroller">
-      <section v-for="day in CHANGELOG" :key="day.date" class="day">
+      <section v-for="day in VISIBLE_CHANGELOG" :key="day.date" class="day">
         <h3>{{ formatDate(day.date) }}</h3>
         <ul>
           <li v-for="(item, i) in day.items" :key="i" class="item">

@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AccountButton from './components/AccountButton.vue'
 import ServiceStatus from './components/ServiceStatus.vue'
 import CityView from './city/CityView.vue'
+import { BACKEND_ENABLED } from './config.js'
 import { PLACES } from './city/places.js'
 
 // Routing minimale con l'hash: #/ è la città, #/<id> l'interno di un edificio.
@@ -29,8 +30,10 @@ function leave() {
   <Transition name="interior">
     <component :is="place.interior" v-if="place" :key="place.id" :place="place" @leave="leave" />
   </Transition>
-  <AccountButton />
-  <ServiceStatus />
+  <template v-if="BACKEND_ENABLED">
+    <AccountButton />
+    <ServiceStatus />
+  </template>
 </template>
 
 <style>
