@@ -1,0 +1,21 @@
+# Sito statico + proxy verso l'API: il browser parla con una sola origine, così il cookie di
+# sessione è di prima parte (niente problemi coi cookie di terze parti).
+{
+	# Dietro il proxy di Railway: l'IP del client arriva in X-Forwarded-For.
+	servers {
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+:{$PORT:8080} {
+	handle /api/* {
+		reverse_proxy {$API_UPSTREAM}
+	}
+	handle /health {
+		reverse_proxy {$API_UPSTREAM}
+	}
+	handle {
+		root * /srv
+		file_server
+	}
+}

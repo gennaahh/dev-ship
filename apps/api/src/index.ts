@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { auth } from './auth.ts'
 import { env, isAllowedOrigin } from './env.ts'
+import { fishingLeaderboard } from './fishing.ts'
 
 const app = new Hono()
 
@@ -20,6 +21,10 @@ app.get('/health', (c) => c.json({ status: 'ok', uptime: Math.round(process.upti
 
 // Login, sessione, logout e token per le stanze: tutto gestito da Better Auth.
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+
+// Classifica della zona di pesca (oggi, settimana, sempre) e ultime catture: pubblica, la vede
+// anche chi non è entrato.
+app.get('/api/fishing/leaderboard', async (c) => c.json(await fishingLeaderboard()))
 
 console.log(`API in ascolto su http://localhost:${env.PORT}`)
 

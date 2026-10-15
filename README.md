@@ -10,6 +10,7 @@ The home page is a city. In the middle of the square stands a big billboard whos
 - Double-click the **Dev-ship** label under the billboard screen to open the dev-ship alone, full screen, without the rest of the interface (handy on a wall screen). Esc or another double-click closes it.
 - Under the billboard there is the **square** (`#/piazza`). Inside it is seen from above like the rooms of Club Penguin: click where you want to go and your character walks there. A few demo characters stroll around and chat. The **shop** stall on the left opens a catalog where you can try colours and hats on a preview (buying will come with coins).
 - Around the billboard there are the **mine**, the **dungeon**, the **office**, the **museum** and the **fishing spot**. Click one to fly to its door and go inside (`#/miniera`, `#/dungeon`, `#/ufficio`, `#/museo`, `#/pesca`). The interiors are drafts for now; the `−` button folds their info panel.
+- The **fishing spot** (`#/pesca`) is the first game. Seen from high above, it has a lake with 10 chairs around it and a big meadow where players walk and chat like in the plaza. Logged-in players click a free chair to walk there and sit down, one player per chair (whoever gets there first). A fish bites after 10 to 20 minutes, and 3 times out of 4 it stays on the hook. Its weight is 1–4.9 kg, or 5–20 kg one time in ten, and every kilo is worth 10 points. A billboard in the top left cycles between the leaderboard of today, this week (from Monday) and all time, and the latest catches. Fish of 5 kg or more get a full-screen celebration that everyone at the lake sees. Standing up, walking away or leaving frees the chair. Without login, or in demo mode, you stroll on your own while the leaderboard crew fishes.
 
 Characters are drawn by `src/city/Avatar.vue` from a "look" (`{ color, hat }`, see `src/city/avatar.js`), so customisation only has to save that object.
 
@@ -41,8 +42,9 @@ The position follows your local time. Use the slider at the top of the zoomed bi
 
 The backend is being prototyped (see `docs/adr/0001-stack-backend.md`). For now there are:
 
-- **login with an email code**: press "Accedi" in the bottom left corner, type your email and then the 6-digit code you receive. No passwords;
+- **login with GitHub**: press "Accedi con GitHub" in the bottom left corner. No passwords;
 - **multiplayer in the dungeon**: logged-in players see each other move (WASD or arrow keys), each with their own name. Without login, or without the game server, the dungeon works as before, with a notice at the top; it joins by itself as soon as the server is back;
+- **fishing**: the game server (`FishingRoom`) moves the players around the lake, runs the chairs, the bite timer and the chat, and it saves every catch in PostgreSQL (`fish_catch`). The API serves the leaderboard at `GET /api/fishing/leaderboard`, with the top 10 of today, this week and all time (Italian time) and the latest 10 catches;
 - a **status badge** in the bottom left corner, with one light for the API and one for the game server (green: online, red: offline).
 
 All of this is on in development. A production build has it only when `VITE_API_URL` and `VITE_GAME_URL` are set at build time; without them (the live site today, or the file opened from disk) it runs in **demo mode**: the static city, with no login, no status badge, no multiplayer and none of the backend changelog entries (`backend: true` in `src/city/changelog.js`).
@@ -64,7 +66,7 @@ The build puts all JS and CSS inside `dist/index.html`, so the file also works w
 The first time, start the services in Docker (`docker-compose.yml`) and create the database tables:
 
 ```bash
-bun run infra:up    # PostgreSQL 18, Redis 8 and Mailpit; waits until they are ready
+bun run infra:up    # PostgreSQL 18 and Redis 8; waits until they are ready
 bun run db:migrate  # applies the migrations in apps/api/drizzle
 ```
 
@@ -74,18 +76,19 @@ Then start frontend, API and game server together:
 bun run dev:all
 ```
 
-Login codes are not really sent: they end up in **Mailpit**, at http://localhost:8025. To try the multiplayer, log in with two different emails in two browsers (or a normal and a private window), then open `#/dungeon` or `#/piazza` in both. In the plaza you walk by clicking and chat with Enter: while someone types, dots appear over their head, then the message shows up in a speech bubble. Outside the buildings the chat is the city-wide one, inside each place has its own.
+To try fishing without waiting 10–20 minutes for a bite, start the game server with `FISHING_FAST=1`: bites then come after 10–20 seconds.
+
+Login uses GitHub OAuth: create an OAuth App at https://github.com/settings/developers with callback URL `http://localhost:3000/api/auth/callback/github` and put its id and secret in `.env` as `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. To try the multiplayer, log in with two different GitHub accounts in two browsers (or a normal and a private window), then open `#/dungeon` or `#/piazza` in both. In the plaza you walk by clicking and chat with Enter: while someone types, dots appear over their head, then the message shows up in a speech bubble. Outside the buildings the chat is the city-wide one, inside each place has its own.
 
 `bun run infra:down` stops the services; the data stays in Docker volumes (`docker compose down -v` wipes it). The services listen on `127.0.0.1` only.
 
 ### Other PCs on the local network
 
 ```bash
-MAILPIT_BIND=0.0.0.0 bun run infra:up  # lets the other PCs read their codes in Mailpit
 bun run dev:lan
 ```
 
-Vite prints the `Network` address to open on the other PCs (for example `http://192.168.1.10:5173`); Mailpit is on the same address, port 8025. The page looks for the API and the game server on the same host it was opened from, so nothing else needs to be configured. If the other PCs can't connect, check that the firewall lets through ports 5173, 3000, 2567 and 8025 (with ufw: `sudo ufw allow 5173,3000,2567,8025/tcp`).
+Vite prints the `Network` address to open on the other PCs (for example `http://192.168.1.10:5173`). The page looks for the API and the game server on the same host it was opened from, so nothing else needs to be configured. If the other PCs can't connect, check that the firewall lets through ports 5173, 3000, and 2567 (with ufw: `sudo ufw allow 5173,3000,2567/tcp`).
 
 ### Running the pieces one at a time
 
@@ -97,7 +100,7 @@ bun run dev:game  # game server (Colyseus on Bun, apps/game) on ws://localhost:2
 
 ### Configuration
 
-API and game server read `.env` in the repository root, if there is one: copy `.env.example`, which lists every variable. In development they all have defaults; in production the API stops at startup if `DATABASE_URL`, `BETTER_AUTH_SECRET` or `SMTP_URL` are missing. The frontend looks for both servers on the host the page was opened from; set `VITE_API_URL` and `VITE_GAME_URL` at build time to point it elsewhere (in a production build they also turn the backend on, see demo mode above).
+API and game server read `.env` in the repository root, if there is one: copy `.env.example`, which lists every variable. In development they all have defaults; in production the API stops at startup if `DATABASE_URL`, `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID` or `GITHUB_CLIENT_SECRET` are missing. The frontend looks for both servers on the host the page was opened from; set `VITE_API_URL` and `VITE_GAME_URL` at build time to point it elsewhere (in a production build they also turn the backend on, see demo mode above).
 
 The database schema lives in `apps/api/src/db`. The tables for players and sessions are generated by Better Auth (`bun run --filter @dev-city/api auth:schema`); after changing the schema, `bun run --filter @dev-city/api db:generate` writes a new migration.
 

@@ -29,8 +29,9 @@ function leave() {
 const fullscreen = ref(false)
 
 // Fuori dagli edifici la chat è quella della città (in alto a sinistra), dentro quella del
-// luogo (in basso a sinistra). La piazza ha
-// la sua: passa dalla stanza della piazza, che mette i fumetti sui personaggi.
+// luogo (in basso a sinistra). La piazza e la zona di pesca hanno la loro: passa dalla stanza
+// del luogo, che mette i fumetti sui personaggi.
+const OWN_CHAT = ['piazza', 'pesca']
 const chatChannel = computed(() => place.value?.id ?? 'city')
 // Col cartellone zoomato la chat della città si ripiega, per non coprirne l'angolo.
 const boardZoomed = ref(false)
@@ -50,7 +51,7 @@ const chatTitle = computed(() => (place.value ? `Chat: ${place.value.name}` : 'C
       <AccountButton />
       <ServiceStatus />
     </div>
-    <AreaChat v-if="chatChannel !== 'piazza'" :key="chatChannel" :channel="chatChannel" :title="chatTitle" :corner="place ? 'bottom' : 'top'" :fold="!place && boardZoomed" />
+    <AreaChat v-if="!OWN_CHAT.includes(chatChannel)" :key="chatChannel" :channel="chatChannel" :title="chatTitle" :corner="place ? 'bottom' : 'top'" :fold="!place && boardZoomed" />
   </template>
   <FullscreenButton />
   <DevShipFullscreen v-if="fullscreen" @close="fullscreen = false" />

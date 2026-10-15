@@ -17,8 +17,9 @@ const Env = z.object({
   DATABASE_URL: devOnly(z.string(), 'postgres://devcity:devcity@localhost:5432/devcity'),
   // Chiave per firmare i cookie di sessione e cifrare le chiavi dei token.
   BETTER_AUTH_SECRET: devOnly(z.string().min(32), 'sviluppo-locale-non-usare-in-produzione-0000'),
-  SMTP_URL: devOnly(z.string(), 'smtp://localhost:1025'),
-  MAIL_FROM: z.string().default('Dev City <noreply@devcity.local>'),
+  // OAuth app di GitHub (github.com/settings/developers). Callback: <API_URL>/api/auth/callback/github
+  GITHUB_CLIENT_ID: devOnly(z.string(), 'non-configurato'),
+  GITHUB_CLIENT_SECRET: devOnly(z.string(), 'non-configurato'),
 })
 
 const parsed = Env.safeParse(process.env)

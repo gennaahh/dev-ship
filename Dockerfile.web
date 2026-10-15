@@ -1,0 +1,18 @@
+# Frontend statico. VITE_API_URL e VITE_GAME_URL entrano nel build (ARG impostati da Railway).
+FROM oven/bun:1-alpine AS build
+WORKDIR /app
+COPY package.json bun.lock ./
+COPY apps/api/package.json apps/api/
+COPY apps/game/package.json apps/game/
+RUN bun install --frozen-lockfile
+COPY index.html vite.config.js ./
+COPY src src
+ARG VITE_API_URL
+ARG VITE_GAME_URL
+RUN bunx --bun vite build
+
+FROM caddy:2-alpine
+COPY --from=build /app/dist /srv
+COPY Caddyfile.web /etc/caddy/Caddyfile
+# PORT e API_UPSTREAM (es. http://api.railway.internal:8080) li imposta Railway.
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

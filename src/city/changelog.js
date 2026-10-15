@@ -6,6 +6,21 @@ import { BACKEND_ENABLED } from '../config.js'
 
 export const CHANGELOG = [
   {
+    date: '2026-10-15',
+    items: [
+      { tag: 'new', backend: true, text: 'Si entra con GitHub: un clic su "Accedi con GitHub" e si torna in città già dentro. Niente più codici via email.' },
+    ],
+  },
+  {
+    date: '2026-10-07',
+    items: [
+      { tag: 'new', backend: true, text: 'Primo gioco: la pesca! Nella zona di pesca si cammina fino a una delle 10 sedie attorno al lago, ci si siede e si aspetta: dopo 10-20 minuti abbocca, e 3 volte su 4 il pesce resta all\'amo. 10 punti per chilo.' },
+      { tag: 'new', backend: true, text: 'I pesci da 5 kg in su (uno su dieci) si festeggiano a tutto schermo, e li vedono tutti quelli al lago.' },
+      { tag: 'new', backend: true, text: 'Attorno al lago ci si vede passeggiare e si chiacchiera come in piazza, coi fumetti sopra la testa (anche da seduti).' },
+      { tag: 'new', text: 'La zona di pesca è nuova, vista dall\'alto: un lago con spiaggetta, anatre, ninfee e falò in mezzo a un grande prato, e un cartellone che alterna la classifica di oggi, della settimana e di sempre con gli ultimi pesci presi.' },
+    ],
+  },
+  {
     date: '2026-10-02',
     items: [
       { tag: 'new', text: 'Il pannello dentro i luoghi resta aperto 2 secondi all\'ingresso, poi si rimpicciolisce sul nome: si riapre passandoci sopra col mouse (o col +).' },

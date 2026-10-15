@@ -225,6 +225,14 @@ Si entra solo con l'email: si inserisce l'indirizzo, arriva un codice e lo si di
 
 Un login con GitHub o altri servizi si può aggiungere più avanti come opzione, senza cambiare il resto.
 
+### Login con GitHub al posto del codice via email (2026-10-15)
+
+Si entra solo con GitHub (OAuth). Sostituisce il login con codice via email deciso il 2026-10-02.
+
+- **Perché:** in produzione l'invio delle email richiede un dominio verificato (Resend manda solo al proprio indirizzo finché non c'è) e Railway limita l'SMTP in uscita. GitHub non richiede né dominio né servizio email, e il pubblico del gioco sono sviluppatori.
+- **Cosa si perde:** chi non ha un account GitHub non entra, e l'OAuth richiede URL di callback registrati: dagli altri PC della rete locale (`dev:lan`) il login non funziona, a meno di registrare un'altra OAuth App con quell'indirizzo.
+- **Dopo il login** non cambia niente: sessione sull'API e token breve per entrare nelle stanze Colyseus. Mailpit, nodemailer e l'invio email sono stati tolti.
+
 ### Libreria di autenticazione: Better Auth (2026-10-02)
 
 Era aperta la scelta tra Better Auth e sessioni e codici scritti da noi. Better Auth copre il flusso deciso sopra con due plugin:

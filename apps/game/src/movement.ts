@@ -46,11 +46,11 @@ export function clampToPlaza(p: { x: number; y: number }) {
   }
 }
 
-export function walkToward(pos: { x: number; y: number }, target: { x: number; y: number }, dtMs: number) {
+export function walkToward(pos: { x: number; y: number }, target: { x: number; y: number }, dtMs: number, speed = PLAZA_SPEED) {
   const dx = target.x - pos.x
   const dy = target.y - pos.y
   const dist = Math.hypot(dx, dy)
-  const d = (PLAZA_SPEED * dtMs) / 1000
+  const d = (speed * dtMs) / 1000
   if (dist <= d) return { x: target.x, y: target.y }
   return { x: pos.x + (dx / dist) * d, y: pos.y + (dy / dist) * d }
 }

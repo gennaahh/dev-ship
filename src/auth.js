@@ -1,13 +1,11 @@
 import { createAuthClient } from 'better-auth/vue'
-import { emailOTPClient } from 'better-auth/client/plugins'
 import { API_URL } from './config.js'
 
-// Client di Better Auth: login con codice via email, sessione e token per le stanze.
+// Client di Better Auth: login con GitHub, sessione e token per le stanze.
 // La sessione sta in un cookie dell'API, che il browser manda a ogni richiesta.
 export const authClient = createAuthClient({
   baseURL: API_URL,
   fetchOptions: { credentials: 'include' },
-  plugins: [emailOTPClient()],
 })
 
 // Come si vede il giocatore: lo stesso nome che l'API mette nel token delle stanze.
