@@ -22,6 +22,10 @@ const dialog = ref(null)
 const preview = ref({ ...equipment.value })
 const look = computed(() => lookOf(props.name, preview.value))
 
+// Quello arrivato da poco nello shop ha il cartellino "novità" per due settimane.
+const NEW_DAYS = 14
+const isNew = (item) => item.added && Date.now() - Date.parse(item.added) < NEW_DAYS * 24 * 3600 * 1000
+
 const toggle = (slot, id) => (preview.value = { ...preview.value, [slot]: preview.value[slot] === id ? null : id })
 
 // Quello che si sta provando e non si indossa ancora: da indossare, o prima da comprare.
@@ -99,6 +103,7 @@ function onKeydown(e) {
             <svg viewBox="-55 -135 110 100" aria-hidden="true">
               <Avatar :look="{ color: look.color, hat: h.id }" />
             </svg>
+            <span v-if="isNew(h)" class="new">NOVITÀ</span>
             <span class="hat-name">{{ h.name }}</span>
             <span v-if="canBuy && inventory.owns(h)" class="price owned">{{ equipment.hat === h.id ? 'Indossato ✓' : 'Tuo ✓' }}</span>
             <span v-else class="price">🪙 {{ h.price }}</span>
@@ -279,6 +284,19 @@ h3 {
   font: inherit;
   cursor: pointer;
   transition: transform 0.15s ease;
+  position: relative;
+}
+.new {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px 8px 3px;
+  border: 3px solid #2d2a4a;
+  border-radius: 9px;
+  background: #ff7a59;
+  color: #fff8e6;
+  font-size: 13px;
+  rotate: 6deg;
 }
 .hat:hover {
   transform: translateY(-2px);

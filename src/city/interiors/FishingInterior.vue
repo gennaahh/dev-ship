@@ -194,6 +194,9 @@ const showMarker = (p) => (marker.value = { ...p, k: (marker.value?.k ?? 0) + 1 
 
 function onFloor(e) {
   const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.value.getScreenCTM().inverse())
+  unlessFishing(() => walkTo(p))
+}
+function walkTo(p) {
   moved.value = true
   goingSeat.value = null
   if (online.value) {
@@ -205,8 +208,26 @@ function onFloor(e) {
     showMarker(target)
   }
 }
+// Da seduti un clic sul prato o su un'altra sedia fa alzare: prima si chiede conferma, per
+// non perdere la pesca per sbaglio. leaving è cosa fare se si conferma.
+const leaveDialog = ref(null)
+let leaving = null
+function unlessFishing(action) {
+  if (!mine.value) return action()
+  leaving = action
+  leaveDialog.value.showModal()
+}
+function closeLeave(confirmed) {
+  const action = leaving
+  leaving = null
+  if (leaveDialog.value.open) leaveDialog.value.close()
+  if (confirmed) action?.()
+}
 // Si cammina fino alla sedia: ci si siede all'arrivo, se nessuno ci è arrivato prima.
 function sit(seat) {
+  unlessFishing(() => goSit(seat))
+}
+function goSit(seat) {
   moved.value = true
   goingSeat.value = seat
   seatTaken.value = false
@@ -440,6 +461,14 @@ const farTrees = Array.from({ length: 22 }, (_, i) => ({ x: i * 78 - 20, r: 26 +
       @send="lake.chat.send"
       @typing="lake.chat.setTyping"
     />
+    <dialog ref="leaveDialog" class="leave" aria-labelledby="leave-title" @click.self="closeLeave(false)" @close="closeLeave(false)">
+      <h2 id="leave-title">Smetti di pescare?</h2>
+      <p>Se ti alzi lasci la sedia e la lenza torna su: il tempo in attesa si perde.</p>
+      <div class="actions">
+        <button class="cancel" autofocus @click="closeLeave(false)">Annulla</button>
+        <button class="confirm" @click="closeLeave(true)">Alzati</button>
+      </div>
+    </dialog>
     <BigCatch v-if="bigCatches.length" :key="bigCatches[0].id" :fish="bigCatches[0]" @done="bigCatches.shift()" />
   </InteriorLayout>
 </template>
@@ -630,6 +659,56 @@ const farTrees = Array.from({ length: 22 }, (_, i) => ({ x: i * 78 - 20, r: 26 +
 .stand:active {
   translate: 0 2px;
   box-shadow: 0 1px 0 #2d2a4a;
+}
+.leave {
+  width: min(380px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 18px 22px 20px;
+  border: 5px solid #2d2a4a;
+  border-radius: 20px;
+  background: #fff8e6;
+  box-shadow: 0 6px 0 #2d2a4a;
+  color: #2d2a4a;
+  font-family: 'Lilita One', 'Baloo 2', system-ui, sans-serif;
+  text-align: center;
+}
+.leave::backdrop {
+  background: rgba(45, 42, 74, 0.55);
+}
+.leave h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: normal;
+  color: #e0457b;
+}
+.leave p {
+  margin: 0 0 18px;
+  font-size: 16px;
+}
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.actions button {
+  padding: 6px 18px 8px;
+  border: 3px solid #2d2a4a;
+  border-radius: 10px;
+  box-shadow: 0 3px 0 #2d2a4a;
+  color: #2d2a4a;
+  font: inherit;
+  font-size: 17px;
+  cursor: pointer;
+}
+.actions button:active {
+  translate: 0 2px;
+  box-shadow: 0 1px 0 #2d2a4a;
+}
+.cancel {
+  background: #4fc3f7;
+}
+.confirm {
+  background: #ff7a59;
 }
 /* Sui telefoni sotto al pulsante per tornare e al pannello del luogo (InteriorLayout). */
 @media (max-width: 720px) {

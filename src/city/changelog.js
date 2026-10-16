@@ -6,6 +6,13 @@ import { BACKEND_ENABLED } from '../config.js'
 
 export const CHANGELOG = [
   {
+    date: '2026-10-16',
+    items: [
+      { tag: 'new', text: 'Tre cappelli nuovi nello shop della piazza, col cartellino NOVITÀ: il cappellino arcobaleno con l\'elica che gira, il berretto da capitano e il cappello da mago.' },
+      { tag: 'new', backend: true, text: 'Al lago, da seduti, un clic sul prato o su un\'altra sedia chiede prima conferma: "Annulla" resta a pescare, "Alzati" lascia la sedia. Niente più pesche interrotte per sbaglio.' },
+    ],
+  },
+  {
     date: '2026-10-15',
     items: [
       { tag: 'new', backend: true, text: 'Inventario! In alto a destra c\'è il proprio personaggio con nome e monete d\'oro: un clic (o il tasto I) apre l\'inventario, coi pesci presi, i cappelli, i colori e cosa si indossa.' },

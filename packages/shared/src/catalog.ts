@@ -3,7 +3,8 @@
 // Gli id finiscono nel database (player_item, player_equipment): non vanno cambiati.
 
 export type Slot = 'hat' | 'color'
-export type ShopItem = { id: string; kind: Slot; name: string; price: number; value?: string }
+// added: il giorno in cui è arrivato nello shop, che per un po' lo segna come novità.
+export type ShopItem = { id: string; kind: Slot; name: string; price: number; value?: string; added?: string }
 
 // Prezzo 0: lo si ha già, senza comprarlo.
 export const COLORS = [
@@ -17,14 +18,18 @@ export const COLORS = [
   { id: 'notte', name: 'Notte', value: '#5c6bc0', price: 80 },
 ].map((c) => ({ ...c, kind: 'color' as const }))
 
+// In ordine di prezzo, come li mostra lo shop.
 export const HATS = [
   { id: 'beanie', name: 'Cuffia col pon pon', price: 80 },
   { id: 'cap', name: 'Cappellino', price: 100 },
   { id: 'chef', name: 'Cappello da cuoco', price: 120 },
   { id: 'headphones', name: 'Cuffie da focus', price: 150 },
+  { id: 'propeller', name: 'Cappellino a elica', price: 200, added: '2026-10-16' },
   { id: 'pirate', name: 'Tricorno da pirata', price: 250 },
+  { id: 'captain', name: 'Berretto da capitano', price: 300, added: '2026-10-16' },
+  { id: 'wizard', name: 'Cappello da mago', price: 400, added: '2026-10-16' },
   { id: 'crown', name: 'Corona', price: 500 },
-].map((h) => ({ ...h, kind: 'hat' as const }))
+].map((h): ShopItem => ({ ...h, kind: 'hat' as const }))
 
 const SHOP: ShopItem[] = [...COLORS, ...HATS]
 export const shopItem = (id: string) => SHOP.find((i) => i.id === id)
