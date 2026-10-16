@@ -115,3 +115,7 @@ cd apps/game
 REDIS_URL=redis://localhost:6379 PORT=2567 PUBLIC_ADDRESS=localhost:2567 bun src/index.ts
 REDIS_URL=redis://localhost:6379 PORT=2568 PUBLIC_ADDRESS=localhost:2568 bun src/index.ts
 ```
+
+## Release
+
+Production runs on Railway as three services built from the root of this repository: `web` (frontend served by Caddy, `Dockerfile.web`), `api` (`apps/api/Dockerfile`, applies the database migrations at startup) and `game` (`apps/game/Dockerfile`). Each service is connected to `main` on GitHub, so **every push to `main` is released**. Each one only rebuilds when files it depends on change: the watch patterns are in its config file (`railway.web.json`, `apps/api/railway.json`, `apps/game/railway.json`), whose path is set in the service settings on Railway.
