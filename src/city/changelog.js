@@ -8,6 +8,8 @@ export const CHANGELOG = [
   {
     date: '2026-10-16',
     items: [
+      { tag: 'new', backend: true, text: 'I colori del personaggio ora sono tutti gratis: niente più nello shop, si scelgono quando si vuole dalla finestra del personaggio (tasto C). Allo shop restano i cappelli.' },
+      { tag: 'new', backend: true, text: 'Personaggio e inventario ora sono due finestre. Il proprio personaggio in alto a destra (o il tasto C) apre la finestra del personaggio, con cosa si indossa e il guardaroba di cappelli e colori; lo zainetto di fianco (o il tasto I) apre l\'inventario, con le monete e i pesci da vendere.' },
       { tag: 'new', text: 'Tre cappelli nuovi nello shop della piazza, col cartellino NOVITÀ: il cappellino arcobaleno con l\'elica che gira, il berretto da capitano e il cappello da mago.' },
       { tag: 'new', backend: true, text: 'Al lago, da seduti, un clic sul prato o su un\'altra sedia chiede prima conferma: "Annulla" resta a pescare, "Alzati" lascia la sedia. Niente più pesche interrotte per sbaglio.' },
     ],

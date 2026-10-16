@@ -17,10 +17,10 @@ defineEmits(['leave'])
 // Senza backend non ci sono monete: lo shop fa solo provare.
 const plans = BACKEND_ENABLED
   ? [
-      'Allo shop si comprano colori e cappelli con le monete d\'oro: si guadagnano vendendo i pesci.',
-      'Quello che si compra finisce nell\'inventario (tasto I o il proprio personaggio in alto a destra).',
+      'Allo shop si comprano cappelli con le monete d\'oro: si guadagnano vendendo i pesci.',
+      'Quello che si compra si indossa dalla finestra del personaggio (tasto C o il proprio personaggio in alto a destra).',
     ]
-  : ['Allo shop si provano colori e cappelli per il proprio personaggio.', 'Le monete si guadagneranno in città: gemme, bug chiusi e pesci.']
+  : ['Allo shop si provano i cappelli sul proprio personaggio.', 'Le monete si guadagneranno in città: gemme, bug chiusi e pesci.']
 
 // La piazza vista come le stanze di Club Penguin: camera alta e frontale, pavimento che sale
 // verso il fondo, personaggi della stessa misura ovunque. Si cammina cliccando dove andare.

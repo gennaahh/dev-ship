@@ -7,7 +7,8 @@ import { speciesFor } from '../city/fishing/lake.js'
 // Inventario, monete d'oro ed equipaggiamento del giocatore, dall'API. È uno solo per tutta
 // la pagina (la finestra dell'inventario, lo shop, il proprio personaggio nei luoghi):
 // si ricarica da solo al login e si svuota al logout. Senza backend resta vuoto.
-// ready: c'è un inventario (loggati e caricato). open: la finestra dell'inventario è aperta.
+// ready: c'è un inventario (loggati e caricato). open: la finestra aperta, 'bag' (l'inventario,
+// tasto I), 'character' (personaggio ed equipaggiamento, tasto C) o null.
 let store = null
 export function useInventory() {
   store ??= effectScope(true).run(createStore)
@@ -20,7 +21,7 @@ function createStore() {
   const data = ref(null)
   const error = ref('')
   const busy = ref(false)
-  const open = ref(false)
+  const open = ref(null)
   const session = BACKEND_ENABLED ? authClient.useSession() : ref({ data: null })
   const userId = computed(() => session.value?.data?.user?.id ?? null)
 
@@ -67,7 +68,7 @@ function createStore() {
     (id) => {
       data.value = null
       error.value = ''
-      if (!id) open.value = false
+      if (!id) open.value = null
       refresh()
     },
     { immediate: true },

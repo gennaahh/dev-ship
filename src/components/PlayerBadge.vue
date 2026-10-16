@@ -1,33 +1,22 @@
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { authClient, displayName } from '../auth.js'
 import Avatar from '../city/Avatar.vue'
 import { lookOf } from '../city/avatar.js'
 import { useInventory } from '../composables/useInventory.js'
+import KeyCap from './KeyCap.vue'
 
 // In alto a destra, da loggati: il proprio personaggio, il nome e le monete d'oro.
-// Un clic (o il tasto I) apre l'inventario. La posizione la decide App.vue.
+// Un clic (o il tasto C) apre la finestra del personaggio. La posizione la decide App.vue.
 const session = authClient.useSession()
 const user = computed(() => session.value.data?.user ?? null)
 const name = computed(() => (user.value ? displayName(user.value) : ''))
 const inventory = useInventory()
 const look = computed(() => lookOf(name.value, inventory.equipment.value))
-
-// I apre e chiude l'inventario, tranne mentre si scrive o con un'altra finestra aperta (shop).
-const TYPING = 'input, textarea, select, [contenteditable]'
-function onKey(e) {
-  if (e.key.toLowerCase() !== 'i' || e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing) return
-  if (e.target.closest?.(TYPING)) return
-  if (!inventory.open.value && document.querySelector('dialog[open]')) return
-  e.preventDefault()
-  inventory.open.value = !inventory.open.value
-}
-onMounted(() => addEventListener('keydown', onKey))
-onUnmounted(() => removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <button v-if="user" class="badge" title="Inventario (I)" aria-label="Apri l'inventario (I)" @click="inventory.open.value = true">
+  <button v-if="user" class="badge" title="Personaggio (C)" aria-label="Apri la finestra del personaggio (C)" @click="inventory.open.value = 'character'">
     <span class="face">
       <svg viewBox="-52 -138 104 104" aria-hidden="true">
         <Avatar :look="look" />
@@ -37,16 +26,13 @@ onUnmounted(() => removeEventListener('keydown', onKey))
       <span class="name">{{ name }}</span>
       <span class="gold">🪙 {{ inventory.ready.value ? inventory.gold.value : '…' }}</span>
     </span>
-    <svg class="bag" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M 8 8 V 6 a 4 4 0 0 1 8 0 V 8" fill="none" />
-      <path d="M 4 8 H 20 L 19 20 a 2 2 0 0 1 -2 2 H 7 a 2 2 0 0 1 -2 -2 Z" />
-      <path d="M 9 13 H 15" fill="none" />
-    </svg>
+    <KeyCap letter="C" />
   </button>
 </template>
 
 <style scoped>
 .badge {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -97,23 +83,12 @@ onUnmounted(() => removeEventListener('keydown', onKey))
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
-.bag {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  fill: #ffd54a;
-  stroke: #2d2a4a;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-/* Sui telefoni basta il personaggio: monete e nome si vedono nell'inventario. */
+/* Sui telefoni basta il personaggio: nome e monete si vedono nelle finestre. */
 @media (max-width: 720px) {
   .badge {
     padding: 0 4px;
   }
-  .info,
-  .bag {
+  .info {
     display: none;
   }
 }

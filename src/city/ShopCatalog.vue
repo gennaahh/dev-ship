@@ -3,10 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useInventory } from '../composables/useInventory.js'
 import { BACKEND_ENABLED } from '../config.js'
 import Avatar from './Avatar.vue'
-import { COLORS, HATS, lookOf } from './avatar.js'
+import { HATS, lookOf } from './avatar.js'
 
-// Catalogo dello shop della piazza: si provano colori e cappelli sull'anteprima e, da loggati,
-// si comprano con le monete d'oro e si indossano. Senza login (o senza backend) si prova soltanto.
+// Catalogo dello shop della piazza: si provano i cappelli sull'anteprima e, da loggati, si
+// comprano con le monete d'oro e si indossano. I colori sono gratis e si scelgono dalla
+// finestra del personaggio. Senza login (o senza backend) si prova soltanto.
 const props = defineProps({
   // Il nome del giocatore, null senza login.
   name: { type: String, default: null },
@@ -18,29 +19,25 @@ const { equipment, gold, busy, error } = inventory
 const canBuy = computed(() => props.name !== null && inventory.ready.value)
 
 const dialog = ref(null)
-// Cosa si sta provando, come l'equipaggiamento: id del catalogo, null = niente.
-const preview = ref({ ...equipment.value })
-const look = computed(() => lookOf(props.name, preview.value))
+// Il cappello che si sta provando, come nell'equipaggiamento: id del catalogo, null = niente.
+const preview = ref(equipment.value.hat)
+const look = computed(() => lookOf(props.name, { ...equipment.value, hat: preview.value }))
 
 // Quello arrivato da poco nello shop ha il cartellino "novità" per due settimane.
 const NEW_DAYS = 14
 const isNew = (item) => item.added && Date.now() - Date.parse(item.added) < NEW_DAYS * 24 * 3600 * 1000
 
-const toggle = (slot, id) => (preview.value = { ...preview.value, [slot]: preview.value[slot] === id ? null : id })
+const toggle = (id) => (preview.value = preview.value === id ? null : id)
 
-// Quello che si sta provando e non si indossa ancora: da indossare, o prima da comprare.
-const changes = computed(() =>
-  ['color', 'hat']
-    .filter((slot) => preview.value[slot] !== equipment.value[slot])
-    .map((slot) => {
-      const item = (slot === 'hat' ? HATS : COLORS).find((i) => i.id === preview.value[slot]) ?? null
-      const label = item?.name ?? (slot === 'hat' ? 'Senza cappello' : 'Il tuo colore di sempre')
-      return { slot, item, label, owned: !item || inventory.owns(item) }
-    }),
-)
-async function apply({ slot, item, owned }) {
+// Il cappello che si sta provando, se non lo si indossa già: da indossare, o prima da comprare.
+const change = computed(() => {
+  if (preview.value === equipment.value.hat) return null
+  const item = HATS.find((h) => h.id === preview.value) ?? null
+  return { item, label: item?.name ?? 'Senza cappello', owned: !item || inventory.owns(item) }
+})
+async function apply({ item, owned }) {
   if (!owned && !(await inventory.buy(item.id))) return
-  await inventory.equip(slot, item?.id ?? null)
+  await inventory.equip('hat', item?.id ?? null)
 }
 
 onMounted(() => dialog.value.showModal())
@@ -67,15 +64,15 @@ function onKeydown(e) {
           <Avatar :look="look" />
         </svg>
         <template v-if="canBuy">
-          <ul v-if="changes.length" class="changes">
-            <li v-for="c in changes" :key="c.slot">
-              <span>{{ c.label }}</span>
-              <button v-if="c.owned" class="buy" :disabled="busy" @click="apply(c)">Indossa</button>
-              <button v-else-if="gold >= c.item.price" class="buy" :disabled="busy" @click="apply(c)">Compra · 🪙 {{ c.item.price }}</button>
-              <span v-else class="short">Mancano 🪙 {{ c.item.price - gold }}</span>
+          <ul v-if="change" class="changes">
+            <li>
+              <span>{{ change.label }}</span>
+              <button v-if="change.owned" class="buy" :disabled="busy" @click="apply(change)">Indossa</button>
+              <button v-else-if="gold >= change.item.price" class="buy" :disabled="busy" @click="apply(change)">Compra · 🪙 {{ change.item.price }}</button>
+              <span v-else class="short">Mancano 🪙 {{ change.item.price - gold }}</span>
             </li>
           </ul>
-          <p v-else>È il tuo look. Scegli un colore o un cappello per provarlo.</p>
+          <p v-else>È il tuo look. Scegli un cappello per provarlo: il colore lo cambi gratis dalla finestra del personaggio (C).</p>
           <p v-if="error" class="error" role="alert">{{ error }}</p>
         </template>
         <p v-else-if="BACKEND_ENABLED">Prova pure: per comprare serve il login, e le monete si guadagnano vendendo i pesci.</p>
@@ -83,23 +80,9 @@ function onKeydown(e) {
       </div>
 
       <div class="items">
-        <h3>Colori</h3>
-        <div class="colors">
-          <button
-            v-for="c in COLORS"
-            :key="c.id"
-            class="swatch"
-            :class="{ on: preview.color === c.id }"
-            :style="{ background: c.value }"
-            :title="`${c.name} · ${canBuy && inventory.owns(c) ? 'tuo' : c.price ? `${c.price} monete` : 'gratis'}`"
-            :aria-label="c.name"
-            @click="toggle('color', c.id)"
-          />
-        </div>
-
         <h3>Cappelli</h3>
         <div class="hats">
-          <button v-for="h in HATS" :key="h.id" class="hat" :class="{ on: preview.hat === h.id }" @click="toggle('hat', h.id)">
+          <button v-for="h in HATS" :key="h.id" class="hat" :class="{ on: preview === h.id }" @click="toggle(h.id)">
             <svg viewBox="-55 -135 110 100" aria-hidden="true">
               <Avatar :look="{ color: look.color, hat: h.id }" />
             </svg>
@@ -244,27 +227,6 @@ h3 {
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: normal;
-}
-.colors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.swatch {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #2d2a4a;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-.swatch:hover,
-.swatch.on {
-  transform: scale(1.12);
-}
-.swatch.on {
-  box-shadow: 0 0 0 4px #fff8e6, 0 0 0 8px #e0457b;
 }
 .hats {
   display: grid;

@@ -2,10 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AccountButton from './components/AccountButton.vue'
 import AreaChat from './components/AreaChat.vue'
+import CharacterWindow from './components/CharacterWindow.vue'
 import ServiceStatus from './components/ServiceStatus.vue'
 import CityView from './city/CityView.vue'
 import DevShipFullscreen from './components/DevShipFullscreen.vue'
 import FullscreenButton from './components/FullscreenButton.vue'
+import InventoryButton from './components/InventoryButton.vue'
 import InventoryWindow from './components/InventoryWindow.vue'
 import PlayerBadge from './components/PlayerBadge.vue'
 import { useInventory } from './composables/useInventory.js'
@@ -40,7 +42,27 @@ const chatChannel = computed(() => place.value?.id ?? 'city')
 const boardZoomed = ref(false)
 const chatTitle = computed(() => (place.value ? `Chat: ${place.value.name}` : 'Chat della città'))
 
+// Le finestre del giocatore: I l'inventario, C il personaggio. Lo stesso tasto chiude, l'altro
+// passa all'altra finestra. Niente mentre si scrive, da sloggati o con un'altra finestra aperta
+// (shop, conferme).
 const inventory = useInventory()
+const WINDOW_KEYS = { i: 'bag', c: 'character' }
+const TYPING = 'input, textarea, select, [contenteditable]'
+function onKey(e) {
+  const which = WINDOW_KEYS[e.key.toLowerCase()]
+  if (!which || e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing) return
+  if (e.target.closest?.(TYPING) || !inventory.ready.value) return
+  if (!inventory.open.value && document.querySelector('dialog[open]')) return
+  e.preventDefault()
+  inventory.open.value = inventory.open.value === which ? null : which
+}
+onMounted(() => addEventListener('keydown', onKey))
+onUnmounted(() => removeEventListener('keydown', onKey))
+// Chiude solo se è ancora quella aperta: passando da una finestra all'altra, quella che se ne
+// va non deve chiudere la nuova.
+function closeWindow(which) {
+  if (inventory.open.value === which) inventory.open.value = null
+}
 </script>
 
 <template>
@@ -57,11 +79,13 @@ const inventory = useInventory()
       <ServiceStatus />
     </div>
     <AreaChat v-if="!OWN_CHAT.includes(chatChannel)" :key="chatChannel" :channel="chatChannel" :title="chatTitle" :corner="place ? 'bottom' : 'top'" :fold="!place && boardZoomed" />
-    <InventoryWindow v-if="inventory.open.value" @close="inventory.open.value = false" />
+    <InventoryWindow v-if="inventory.open.value === 'bag'" @close="closeWindow('bag')" />
+    <CharacterWindow v-if="inventory.open.value === 'character'" @close="closeWindow('character')" />
   </template>
-  <!-- In alto a destra il proprio personaggio (apre l'inventario) e lo schermo intero. -->
+  <!-- In alto a destra il proprio personaggio, lo zainetto dell'inventario e lo schermo intero. -->
   <div class="corner">
     <PlayerBadge v-if="BACKEND_ENABLED" />
+    <InventoryButton v-if="BACKEND_ENABLED" />
     <FullscreenButton />
   </div>
   <DevShipFullscreen v-if="fullscreen" @close="fullscreen = false" />
