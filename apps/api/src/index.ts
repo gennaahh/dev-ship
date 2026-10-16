@@ -8,6 +8,7 @@ import { env, isAllowedOrigin } from './env.ts'
 import { fishingLeaderboard } from './fishing.ts'
 import { buy, craft, equip, InventoryError, inventoryOf, runDungeon, sellFish, sellItems } from './inventory.ts'
 import { mineBoard } from './mine.ts'
+import { cancelMission, completeMission, missionOf, officeBoard, takeMission } from './office.ts'
 
 const app = new Hono<{ Variables: { userId: string } }>()
 
@@ -32,6 +33,8 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 app.get('/api/fishing/leaderboard', async (c) => c.json(await fishingLeaderboard()))
 // Il cartellone della miniera: classifica delle scoperte (oggi, settimana, sempre) e le ultime.
 app.get('/api/mine/leaderboard', async (c) => c.json(await mineBoard()))
+// La bacheca delle missioni dell'ufficio: da fare, in corso e consegnate da poco.
+app.get('/api/office/board', async (c) => c.json(await officeBoard()))
 
 // Inventario, monete ed equipaggiamento: solo da loggati, ognuno il suo.
 // csrf: i form di altri siti (che il browser manda col cookie) non passano, il fetch in JSON sì.
@@ -43,10 +46,12 @@ const SellItemsInput = z.object({
 const BuyInput = z.object({ itemId: z.string().max(40) })
 const EquipInput = z.object({ slot: z.enum(['hat', 'color', 'weapon', 'armor', 'rod', 'pickaxe']), itemId: z.string().max(40).nullable() })
 const CraftInput = z.object({ recipeId: z.string().max(40) })
+const TakeMissionInput = z.object({ id: z.number().int().positive() })
 
 app.use('/api/inventory/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
 app.use('/api/shop/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
 app.use('/api/dungeon/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
+app.use('/api/office/mission/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
 const signedIn = async (c: Context, next: () => Promise<void>) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers })
   if (!session) return c.json({ error: 'Serve il login.' }, 401)
@@ -57,6 +62,8 @@ app.use('/api/inventory', signedIn)
 app.use('/api/inventory/*', signedIn)
 app.use('/api/shop/*', signedIn)
 app.use('/api/dungeon/*', signedIn)
+app.use('/api/office/mission', signedIn)
+app.use('/api/office/mission/*', signedIn)
 
 // Il corpo della richiesta, validato: se non va bene risponde 400 e restituisce null.
 async function body<T>(c: Context, schema: z.ZodType<T>) {
@@ -95,6 +102,16 @@ app.post('/api/shop/buy', async (c) => {
 
 // Una run nel dungeon con un ticket: la risposta ha la run da guardare e l'inventario già aggiornato.
 app.post('/api/dungeon/run', async (c) => c.json(await runDungeon(c.get('userId'))))
+
+// La propria missione dell'ufficio: quella in corso (o null) e fino a quando non se ne può prendere
+// un'altra dopo averne annullata una. Le azioni restituiscono anche la bacheca aggiornata.
+app.get('/api/office/mission', async (c) => c.json(await missionOf(c.get('userId'))))
+app.post('/api/office/mission/take', async (c) => {
+  const input = await body(c, TakeMissionInput)
+  return input ? c.json(await takeMission(c.get('userId'), input.id)) : invalid(c)
+})
+app.post('/api/office/mission/cancel', async (c) => c.json(await cancelMission(c.get('userId'))))
+app.post('/api/office/mission/complete', async (c) => c.json(await completeMission(c.get('userId'))))
 
 console.log(`API in ascolto su http://localhost:${env.PORT}`)
 

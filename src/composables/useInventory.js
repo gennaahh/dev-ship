@@ -9,8 +9,8 @@ import { speciesFor } from '../city/fishing/lake.js'
 // la pagina (la finestra dell'inventario, lo shop, il proprio personaggio nei luoghi):
 // si ricarica da solo al login e si svuota al logout. Senza backend resta vuoto.
 // ready: c'è un inventario (loggati e caricato). open: la finestra aperta, 'bag' (l'inventario,
-// tasto I), 'character' (personaggio ed equipaggiamento, tasto C), 'craft' (il crafting, tasto R)
-// o null.
+// tasto I), 'character' (personaggio ed equipaggiamento, tasto C), 'craft' (il crafting, tasto R),
+// 'mission' (la missione dell'ufficio, tasto M, vedi useOffice.js) o null.
 let store = null
 export function useInventory() {
   store ??= effectScope(true).run(createStore)

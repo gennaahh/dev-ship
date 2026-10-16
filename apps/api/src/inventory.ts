@@ -18,7 +18,7 @@ export class InventoryError extends Error {
   }
 }
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 const goldOf = async (tx: Tx | typeof db, userId: string) => {
   const [row] = await tx
@@ -100,13 +100,13 @@ const owns = async (tx: Tx | typeof db, userId: string, itemId: string) =>
   (await tx.select({ id: playerItem.id }).from(playerItem).where(and(eq(playerItem.userId, userId), eq(playerItem.itemId, itemId))).limit(1)).length > 0
 
 // Quanti ne ha di un oggetto a quantità (zuppe, ticket, materiali).
-const countOf = async (tx: Tx, userId: string, itemId: string) => {
+export const countOf = async (tx: Tx, userId: string, itemId: string) => {
   const [row] = await tx.select({ quantity: playerItem.quantity }).from(playerItem).where(and(eq(playerItem.userId, userId), eq(playerItem.itemId, itemId)))
   return row?.quantity ?? 0
 }
 
 // Aggiunge (o toglie, con n negativo) a un oggetto a quantità; a zero la riga sparisce.
-async function addCount(tx: Tx, userId: string, itemId: string, n: number) {
+export async function addCount(tx: Tx, userId: string, itemId: string, n: number) {
   if (n === 0) return
   await tx
     .insert(playerItem)

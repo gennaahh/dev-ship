@@ -11,6 +11,8 @@ import DevShipFullscreen from './components/DevShipFullscreen.vue'
 import FullscreenButton from './components/FullscreenButton.vue'
 import InventoryButton from './components/InventoryButton.vue'
 import InventoryWindow from './components/InventoryWindow.vue'
+import MissionButton from './components/MissionButton.vue'
+import MissionWindow from './components/MissionWindow.vue'
 import PlayerBadge from './components/PlayerBadge.vue'
 import PlayerMenu from './components/PlayerMenu.vue'
 import TradeInvites from './components/TradeInvites.vue'
@@ -48,11 +50,12 @@ const chatChannel = computed(() => place.value?.id ?? 'city')
 const boardZoomed = ref(false)
 const chatTitle = computed(() => (place.value ? `Chat: ${place.value.name}` : 'Chat della città'))
 
-// Le finestre del giocatore: I l'inventario, C il personaggio, R il crafting (le ricette). Lo
+// Le finestre del giocatore: I l'inventario, C il personaggio, R il crafting (le ricette), M la
+// missione dell'ufficio. Lo
 // stesso tasto chiude, gli altri passano a un'altra finestra. Niente mentre si scrive, da sloggati o con un'altra finestra aperta
 // (shop, conferme).
 const inventory = useInventory()
-const WINDOW_KEYS = { i: 'bag', c: 'character', r: 'craft' }
+const WINDOW_KEYS = { i: 'bag', c: 'character', r: 'craft', m: 'mission' }
 const TYPING = 'input, textarea, select, [contenteditable]'
 function onKey(e) {
   const which = WINDOW_KEYS[e.key.toLowerCase()]
@@ -91,16 +94,18 @@ const trade = useTrade()
     <InventoryWindow v-if="inventory.open.value === 'bag'" @close="closeWindow('bag')" />
     <CharacterWindow v-if="inventory.open.value === 'character'" @close="closeWindow('character')" />
     <CraftingWindow v-if="inventory.open.value === 'craft'" @close="closeWindow('craft')" />
+    <MissionWindow v-if="inventory.open.value === 'mission'" @close="closeWindow('mission')" />
     <TradeWindow v-if="trade.trade.value || trade.done.value" />
     <TradeInvites />
     <PlayerMenu v-if="trade.menu.value" />
   </template>
   <!-- In alto a destra il proprio personaggio, lo zainetto dell'inventario, l'incudine del
-       crafting e lo schermo intero. -->
+       crafting, la cartellina della missione (solo con una missione in corso) e lo schermo intero. -->
   <div class="corner">
     <PlayerBadge v-if="BACKEND_ENABLED" />
     <InventoryButton v-if="BACKEND_ENABLED" />
     <CraftingButton v-if="BACKEND_ENABLED" />
+    <MissionButton v-if="BACKEND_ENABLED" />
     <FullscreenButton />
   </div>
   <DevShipFullscreen v-if="fullscreen" @close="fullscreen = false" />

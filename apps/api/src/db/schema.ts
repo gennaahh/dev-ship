@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
-import { index, integer, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import type { Difficulty, Reward } from '@dev-city/shared/office'
+import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { user } from './auth-schema.ts'
 
 // Tutte le tabelle dell'API. Le tabelle dei giocatori (users, sessions, ...) le genera
@@ -51,8 +52,9 @@ export const playerItem = pgTable(
 
 // Le monete d'oro: ogni movimento è una riga, il saldo è la somma. Le righe non si cambiano
 // né si cancellano. reason: 'sell' (vendita di un pesce o di quello che si trova in miniera),
-// 'buy' (acquisto allo shop), 'dungeon' (monete raccolte in una run, itemId 'dungeon_ticket')
-// o 'trade' (scambio tra giocatori, itemId 'gold').
+// 'buy' (acquisto allo shop), 'dungeon' (monete raccolte in una run, itemId 'dungeon_ticket'),
+// 'trade' (scambio tra giocatori, itemId 'gold') o 'mission' (premio di una missione dell'ufficio,
+// itemId 'mission').
 export const goldLedger = pgTable(
   'gold_ledger',
   {
@@ -100,4 +102,33 @@ export const mineFind = pgTable(
     foundAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('mine_find_found_at_idx').on(table.foundAt)],
+)
+
+// Le missioni della bacheca dell'ufficio (regole in packages/shared/src/office.ts). Una riga per
+// missione, dall'uscita sulla bacheca alla fine. status: 'open' (sulla bacheca, al posto slot),
+// 'taken' (presa da takenBy), 'done' (consegnata, premio riscosso) o 'cancelled' (annullata: da
+// finishedAt per un'ora takenBy non ne prende altre). needs e reward come in Mission.
+export const officeMission = pgTable(
+  'office_mission',
+  {
+    id: serial().primaryKey(),
+    slot: integer().notNull(),
+    difficulty: text().$type<Difficulty>().notNull(),
+    requester: text().notNull(),
+    title: text().notNull(),
+    needs: jsonb().$type<Record<string, number>>().notNull(),
+    reward: jsonb().$type<Reward>().notNull(),
+    status: text().$type<'open' | 'taken' | 'done' | 'cancelled'>().notNull().default('open'),
+    takenBy: text().references(() => user.id, { onDelete: 'cascade' }),
+    takenAt: timestamp({ withTimezone: true }),
+    finishedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // Una missione per posto sulla bacheca, una in corso per giocatore.
+    uniqueIndex('office_mission_open_slot_idx').on(table.slot).where(sql`${table.status} = 'open'`),
+    uniqueIndex('office_mission_taken_idx').on(table.takenBy).where(sql`${table.status} = 'taken'`),
+    index('office_mission_taken_by_idx').on(table.takenBy),
+    index('office_mission_status_idx').on(table.status, table.finishedAt),
+  ],
 )
