@@ -25,14 +25,16 @@ export const POINTS_PER_KG = 10
 const between = (min: number, max: number) => min + Math.random() * (max - min)
 const tenths = (kg: number) => Math.round(kg * 10) / 10
 
-export function biteDelay() {
-  return between(BITE_MIN_MS, BITE_MAX_MS)
+// La canna in mano (catalogo, RODS) accorcia l'attesa di speed e rende più probabili i pesci
+// speciali di luck. Senza, speed e luck sono 0.
+export function biteDelay(speed = 0) {
+  return between(BITE_MIN_MS, BITE_MAX_MS) * (1 - speed)
 }
 
 // null se il pesce scappa, altrimenti il suo peso in kg (al decimo).
-export function rollCatch(): number | null {
+export function rollCatch(luck = 0): number | null {
   if (Math.random() >= CATCH_CHANCE) return null
-  return Math.random() < BIG_CHANCE ? tenths(between(BIG_KG, MAX_KG)) : tenths(between(MIN_KG, MAX_SMALL_KG))
+  return Math.random() < BIG_CHANCE * (1 + luck) ? tenths(between(BIG_KG, MAX_KG)) : tenths(between(MIN_KG, MAX_SMALL_KG))
 }
 
 export const pointsFor = (kg: number) => Math.round(kg * POINTS_PER_KG)

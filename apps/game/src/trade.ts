@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { PlayerAuth } from './auth.ts'
 import { sql } from './db.ts'
 
-// Gli scambi tra giocatori, nelle stanze in cui ci si vede (piazza e zona di pesca).
+// Gli scambi tra giocatori, nelle stanze in cui ci si vede (piazza, zona di pesca e miniera).
 // Col tasto destro su qualcuno gli si chiede uno scambio; se accetta, ognuno mette nella sua
 // metà della finestra monete, pesci e oggetti. Poi la doppia conferma: tutti e due "Pronto"
 // (le offerte si bloccano), poi tutti e due "Conferma scambio". Ogni cambio di offerta toglie
@@ -267,7 +267,12 @@ export class TradeDesk {
           } else {
             const [left] = await tx`update player_item set quantity = quantity - ${n} where user_id = ${from.userId} and item_id = ${itemId} and quantity >= ${n} returning quantity`
             if (!left) throw new TradeError(`${from.name} non ha più ${n} × ${itemName(itemId)}.`)
-            if (left.quantity === 0) await tx`delete from player_item where user_id = ${from.userId} and item_id = ${itemId}`
+            if (left.quantity === 0) {
+              await tx`delete from player_item where user_id = ${from.userId} and item_id = ${itemId}`
+              // L'ultima arma, armatura, canna o piccone che aveva addosso: se la toglie.
+              await tx`update player_equipment set weapon = nullif(weapon, ${itemId}), armor = nullif(armor, ${itemId}),
+                rod = nullif(rod, ${itemId}), pickaxe = nullif(pickaxe, ${itemId}) where user_id = ${from.userId}`
+            }
             await tx`insert into player_item (user_id, item_id, quantity) values (${to.userId}, ${itemId}, ${n})
               on conflict (user_id, item_id) where item_id <> 'fish' do update set quantity = player_item.quantity + ${n}`
           }

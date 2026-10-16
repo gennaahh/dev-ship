@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./catalog": "./src/catalog.ts",
-    "./dungeon": "./src/dungeon.ts"
+    "./dungeon": "./src/dungeon.ts",
+    "./mine": "./src/mine.ts"
   }
 }

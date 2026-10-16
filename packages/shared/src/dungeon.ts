@@ -1,16 +1,17 @@
-import { MATERIALS } from './catalog.ts'
+import { armor, MATERIALS, weapon } from './catalog.ts'
 
 // Il dungeon: una run automatica. Si entra con un ticket (si ripesca in una bottiglia al lago)
-// e 100 HP, e arrivano ondate di bug-mostri sempre più forti; il giocatore non fa niente, si
-// guarda. Quando scende a metà vita beve da solo una zuppa di pesce, finché ne ha. La run finisce
+// e 100 HP (di più con l'armatura), e arrivano ondate di bug-mostri sempre più forti; il
+// giocatore non fa niente, si guarda. L'arma e l'armatura indossate (dal crafting) contano. Quando scende a metà vita beve da solo una zuppa di pesce, finché ne ha. La run finisce
 // quando gli HP finiscono o dopo l'ultima ondata. Monete e materiali raccolti restano comunque.
 // La simulazione la fa l'API, tutta in una volta (il frontend la riguarda con la cronologia
 // degli eventi): qui stanno solo le regole, funzioni pure col caso passato da fuori.
 
 export const PLAYER_HP = 100
-// Il giocatore colpisce il primo mostro in fila ogni ATTACK_MS, per 12-18 danni.
+// Il giocatore colpisce il primo mostro in fila ogni ATTACK_MS, per 12-18 danni con la spada di
+// legno di partenza, di più con un'arma.
 const PLAYER_ATTACK_MS = 800
-const PLAYER_DAMAGE = [12, 18] as const
+export const BASE_DAMAGE = [12, 18] as const
 // La zuppa si beve da sola quando gli HP scendono a SOUP_BELOW o meno.
 export const SOUP_BELOW = 50
 export const SOUP_HEAL = 30
@@ -82,8 +83,18 @@ export type RunEvent =
   | { t: number; type: 'soup'; hp: number; left: number }
   | { t: number; type: 'end'; cleared: boolean }
 
+// Cosa indossa il giocatore nella run: id del catalogo, null = niente (spada di legno, senza armatura).
+export type Loadout = { weapon?: string | null; armor?: string | null }
+// Le statistiche che ne vengono: danni di ogni colpo, vita massima e quota dei danni che l'armatura ferma.
+export function statsOf(loadout: Loadout = {}) {
+  const a = armor(loadout.armor)
+  return { damage: weapon(loadout.weapon)?.damage ?? BASE_DAMAGE, maxHp: PLAYER_HP + (a?.hp ?? 0), defense: a?.defense ?? 0 }
+}
+
 export type RunResult = {
   events: RunEvent[]
+  // La vita con cui si parte (e il massimo a cui curano le zuppe).
+  maxHp: number
   // L'ultima ondata raggiunta (superata, se cleared).
   wave: number
   cleared: boolean
@@ -103,10 +114,11 @@ function waveKinds(wave: number, rand: () => number) {
   return Array.from({ length: 1 + Math.floor(wave / 4) }, () => pool[Math.floor(rand() * pool.length)])
 }
 
-export function simulateRun(soups: number, rand: () => number = Math.random): RunResult {
+export function simulateRun(soups: number, loadout: Loadout = {}, rand: () => number = Math.random): RunResult {
+  const { damage: playerDamage, maxHp, defense } = statsOf(loadout)
   const events: RunEvent[] = []
   const materials: RunResult['materials'] = {}
-  let hp = PLAYER_HP
+  let hp = maxHp
   let gold = 0
   let soupsLeft = soups
   let t = 0
@@ -123,7 +135,8 @@ export function simulateRun(soups: number, rand: () => number = Math.random): Ru
       id: nextId++,
       kind,
       hp: Math.round(kind.hp * hpScale),
-      damage: Math.max(1, Math.round(kind.damage * damageScale)),
+      // L'armatura ferma una parte di ogni colpo, ma almeno 1 passa sempre.
+      damage: Math.max(1, Math.round(kind.damage * damageScale * (1 - defense))),
       // Non attaccano tutti nello stesso istante.
       nextAttack: t + kind.attackMs * (0.6 + 0.15 * i),
     }))
@@ -137,7 +150,7 @@ export function simulateRun(soups: number, rand: () => number = Math.random): Ru
         t = nextSwing
         nextSwing += PLAYER_ATTACK_MS
         const target = monsters[0]
-        const damage = between(rand, PLAYER_DAMAGE)
+        const damage = between(rand, playerDamage)
         target.hp = Math.max(0, target.hp - damage)
         events.push({ t, type: 'hit', id: target.id, damage, hp: target.hp })
         if (target.hp > 0) continue
@@ -156,7 +169,7 @@ export function simulateRun(soups: number, rand: () => number = Math.random): Ru
         if (hp === 0) break fight
         if (hp <= SOUP_BELOW && soupsLeft > 0) {
           soupsLeft--
-          hp = Math.min(PLAYER_HP, hp + SOUP_HEAL)
+          hp = Math.min(maxHp, hp + SOUP_HEAL)
           events.push({ t, type: 'soup', hp, left: soupsLeft })
         }
       }
@@ -166,5 +179,5 @@ export function simulateRun(soups: number, rand: () => number = Math.random): Ru
 
   t += WAVE_PAUSE_MS / 2
   events.push({ t, type: 'end', cleared })
-  return { events, wave, cleared, gold, materials, soupsUsed: soups - soupsLeft, durationMs: t }
+  return { events, maxHp, wave, cleared, gold, materials, soupsUsed: soups - soupsLeft, durationMs: t }
 }

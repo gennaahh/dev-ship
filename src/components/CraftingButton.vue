@@ -4,7 +4,7 @@ import { authClient } from '../auth.js'
 import { useInventory } from '../composables/useInventory.js'
 import KeyCap from './KeyCap.vue'
 
-// In alto a destra, da loggati: la pentola che apre il crafting (anche col tasto R, le ricette).
+// In alto a destra, da loggati: l'incudine che apre il crafting (anche col tasto R, le ricette).
 // La posizione la decide App.vue.
 const session = authClient.useSession()
 const user = computed(() => session.value.data?.user ?? null)
@@ -14,11 +14,11 @@ const inventory = useInventory()
 <template>
   <button v-if="user" class="crafting-button" title="Crafting (R)" aria-label="Apri il crafting (R)" @click="inventory.open.value = 'craft'">
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M 8.5 6 q -1.2 -1.5 0 -3 M 15.5 6 q -1.2 -1.5 0 -3" fill="none" />
-      <path d="M 4.5 11.5 H 19.5 V 17.5 a 3.5 3.5 0 0 1 -3.5 3.5 H 8 a 3.5 3.5 0 0 1 -3.5 -3.5 Z" />
-      <path d="M 4.5 13.5 H 2 M 19.5 13.5 H 22" fill="none" />
-      <rect x="3.5" y="8.5" width="17" height="3" rx="1.5" fill="#ffd54a" />
-      <circle cx="12" cy="7.2" r="1.3" fill="#ffd54a" />
+      <path d="M 2 11 H 21 V 14 H 15.5 V 16.5 L 18.5 20.5 H 6.5 L 9.5 16.5 V 14 Q 4.5 14 2 11 Z" />
+      <path d="M 18 2.6 L 12 6.6" fill="none" stroke-width="5" />
+      <path d="M 18 2.6 L 12 6.6" fill="none" stroke="#c98a4b" stroke-width="2" />
+      <rect x="-2" y="-3.6" width="4" height="7.2" rx="1" transform="translate(11 7.6) rotate(-34)" fill="#b8c2d4" />
+      <path d="M 4.5 7.5 L 3 6 M 6.5 5.5 L 6 3.5" fill="none" stroke-width="1.6" />
     </svg>
     <KeyCap letter="R" />
   </button>

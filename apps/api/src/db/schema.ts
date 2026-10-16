@@ -26,8 +26,9 @@ export const fishCatch = pgTable(
 // Gli oggetti nell'inventario dei giocatori. itemId è un id del catalogo
 // (packages/shared/src/catalog.ts). I pesci sono una riga ciascuno, col loro peso: li aggiunge
 // il game server a ogni cattura, e venduti o cucinati spariscono (in classifica restano).
-// Tutto il resto è una riga sola per giocatore, con quantity: cappelli e colori 1, zuppe
-// (dal crafting), ticket del dungeon (dalla pesca) e materiali (dal dungeon) quanti se ne hanno.
+// Tutto il resto è una riga sola per giocatore, con quantity: cappelli e colori 1, zuppe, armi,
+// armature, canne e picconi (dal crafting), ticket del dungeon (dalla pesca), materiali (dal dungeon), pietre,
+// minerali e gemme (dalla miniera) quanti se ne hanno.
 export const playerItem = pgTable(
   'player_item',
   {
@@ -49,8 +50,9 @@ export const playerItem = pgTable(
 )
 
 // Le monete d'oro: ogni movimento è una riga, il saldo è la somma. Le righe non si cambiano
-// né si cancellano. reason: 'sell' (vendita di un pesce), 'buy' (acquisto allo shop) o
-// 'dungeon' (monete raccolte in una run, itemId 'dungeon_ticket').
+// né si cancellano. reason: 'sell' (vendita di un pesce o di quello che si trova in miniera),
+// 'buy' (acquisto allo shop), 'dungeon' (monete raccolte in una run, itemId 'dungeon_ticket')
+// o 'trade' (scambio tra giocatori, itemId 'gold').
 export const goldLedger = pgTable(
   'gold_ledger',
   {
@@ -68,10 +70,34 @@ export const goldLedger = pgTable(
 
 // Cosa indossa ognuno: id del catalogo, null = niente cappello o il colore di sempre (dal nome).
 // La leggono anche le stanze del game server, per far vedere a tutti il look giusto.
+// weapon e armor: l'arma e l'armatura del crafting che si usano nel dungeon, null = la spada di
+// legno e niente armatura. rod e pickaxe: la canna e il piccone del crafting, che contano al lago
+// e in miniera (li legge il game server), null = quelli di sempre.
 export const playerEquipment = pgTable('player_equipment', {
   userId: text()
     .primaryKey()
     .references(() => user.id, { onDelete: 'cascade' }),
   hat: text(),
   color: text(),
+  weapon: text(),
+  armor: text(),
+  rod: text(),
+  pickaxe: text(),
 })
+
+// Le scoperte in miniera (minerali e gemme, non le pietre). Le scrive il game server
+// (apps/game/src/mine.ts) insieme all'oggetto nell'inventario; l'API ci fa il cartellone della
+// miniera. value: quanto valeva alla vendita quando è stata trovata, per la classifica.
+export const mineFind = pgTable(
+  'mine_find',
+  {
+    id: serial().primaryKey(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    itemId: text().notNull(),
+    value: integer().notNull(),
+    foundAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('mine_find_found_at_idx').on(table.foundAt)],
+)

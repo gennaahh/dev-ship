@@ -27,7 +27,7 @@ export const PLACES = [
   {
     id: 'miniera',
     name: 'Miniera',
-    tagline: 'Si scava nel codice legacy in cerca di gemme',
+    tagline: 'Ci si mette a un filone e si scava: pietre, metalli e gemme',
     box: { x: 10, y: 250, w: 400, h: 300 },
     door: { x: 225, y: 470 },
     building: Mine,

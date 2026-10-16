@@ -29,6 +29,20 @@
       "when": 1792163456226,
       "tag": "0003_dungeon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792170310158,
+      "tag": "0004_mine",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792172314417,
+      "tag": "0005_tools",
+      "breakpoints": true
     }
   ]
 }

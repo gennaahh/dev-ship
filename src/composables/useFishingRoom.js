@@ -7,7 +7,7 @@ import { useWalkingRoom } from './useWalkingRoom.js'
 // caught, escaped). onCatch({ seat, name, weight, points, big, bottle, mine }) a ogni cattura,
 // onSeatTaken() quando si arriva a una sedia che nel frattempo ha preso qualcun altro.
 export function useFishingRoom({ onCatch, onSeatTaken } = {}) {
-  // Una voce per sedia occupata: { seat, id (sessionId), name, phase, since, weight, bottle, me }.
+  // Una voce per sedia occupata: { seat, id (sessionId), name, phase, since, weight, bottle, tool, me }.
   const seats = ref([])
 
   const walk = useWalkingRoom('fishing', {
@@ -16,7 +16,7 @@ export function useFishingRoom({ onCatch, onSeatTaken } = {}) {
       r.onStateChange((state) => {
         const list = []
         state.seats?.forEach((s, key) => {
-          list.push({ seat: Number(key), id: s.sessionId, name: s.name, phase: s.phase, since: s.since, weight: s.weight, bottle: s.bottle, me: s.sessionId === r.sessionId })
+          list.push({ seat: Number(key), id: s.sessionId, name: s.name, phase: s.phase, since: s.since, weight: s.weight, bottle: s.bottle, tool: s.tool, me: s.sessionId === r.sessionId })
         })
         seats.value = list
       })

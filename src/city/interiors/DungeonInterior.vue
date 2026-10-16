@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { MATERIALS, RARITY_NAMES } from '@dev-city/shared/catalog'
-import { BOSS, MAX_WAVES, PLAYER_HP, simulateRun, SOUP_BELOW, SOUP_HEAL } from '@dev-city/shared/dungeon'
+import { armor as armorOf, MATERIALS, RARITY_NAMES, weapon as weaponOf } from '@dev-city/shared/catalog'
+import { BOSS, MAX_WAVES, PLAYER_HP, simulateRun, SOUP_BELOW, SOUP_HEAL, statsOf } from '@dev-city/shared/dungeon'
 import { authClient, displayName } from '../../auth.js'
 import SoupBowl from '../../components/SoupBowl.vue'
 import { useInventory } from '../../composables/useInventory.js'
@@ -11,6 +11,7 @@ import { DEFAULT_LOOK, lookOf } from '../avatar.js'
 import MaterialIcon from '../dungeon/MaterialIcon.vue'
 import Monster from '../dungeon/Monster.vue'
 import TicketBottle from '../dungeon/TicketBottle.vue'
+import GearIcon from '../mine/GearIcon.vue'
 import { monsterX, STAGE, useRunPlayback } from '../dungeon/useRunPlayback.js'
 import InteriorLayout from './InteriorLayout.vue'
 
@@ -19,8 +20,9 @@ defineEmits(['leave'])
 
 const plans = [
   'Si entra con un ticket: si ripesca al lago, in una bottiglia, una volta su 15.',
-  `Si parte con ${PLAYER_HP} HP e arrivano ondate di bug sempre più forti; ogni 5 c'è il boss.`,
+  `Si parte con ${PLAYER_HP} HP (di più con l'armatura) e arrivano ondate di bug sempre più forti; ogni 5 c'è il boss.`,
   `Va tutto da solo, si guarda e basta. Sotto i ${SOUP_BELOW} HP si beve una zuppa di pesce (+${SOUP_HEAL} HP), finché ce ne sono.`,
+  'Arma e armatura forgiate col crafting contano: più danni a ogni colpo, più vita, meno danni presi.',
   'Monete e materiali per armi e armature restano anche quando si perde.',
 ]
 
@@ -28,6 +30,12 @@ const session = BACKEND_ENABLED ? authClient.useSession() : ref({ data: null })
 const user = computed(() => session.value.data?.user ?? null)
 const inventory = useInventory()
 const look = computed(() => (user.value ? lookOf(displayName(user.value), inventory.equipment.value) : DEFAULT_LOOK))
+// L'arma e l'armatura indossate, se si hanno ancora (come le conta l'API), con cosa danno nel dungeon.
+const weapon = computed(() => (inventory.count(inventory.equipment.value.weapon) ? weaponOf(inventory.equipment.value.weapon) : null))
+const armor = computed(() => (inventory.count(inventory.equipment.value.armor) ? armorOf(inventory.equipment.value.armor) : null))
+const stats = computed(() => statsOf({ weapon: weapon.value?.id, armor: armor.value?.id }))
+// Quelle della run in corso, fissate all'ingresso: la run di prova si fa senza.
+const runGear = ref({ weapon: null, armor: null })
 
 // lobby (l'ingresso), run (si guarda) o end (il resoconto).
 const phase = ref('lobby')
@@ -44,6 +52,7 @@ async function enter() {
   demo.value = false
   applyInventory = res.apply
   soupsAtStart.value = inventory.soups.value
+  runGear.value = { weapon: weapon.value?.id ?? null, armor: armor.value?.id ?? null }
   start(res.run, soupsAtStart.value)
   phase.value = 'run'
 }
@@ -52,6 +61,7 @@ const DEMO_SOUPS = 3
 function enterDemo() {
   demo.value = true
   soupsAtStart.value = DEMO_SOUPS
+  runGear.value = { weapon: null, armor: null }
   start(simulateRun(DEMO_SOUPS), DEMO_SOUPS)
   phase.value = 'run'
 }
@@ -64,7 +74,7 @@ watch(() => state.done, (done) => done && finish())
 onUnmounted(() => applyInventory?.())
 
 const canPlay = computed(() => BACKEND_ENABLED && user.value && inventory.ready.value)
-const hpPercent = computed(() => (state.hp / PLAYER_HP) * 100)
+const hpPercent = computed(() => (state.hp / state.maxHp) * 100)
 const dropped = computed(() => MATERIALS.filter((m) => state.materials[m.id]).map((m) => ({ ...m, n: state.materials[m.id] })))
 const looted = computed(() => dropped.value.reduce((sum, m) => sum + m.n, 0))
 // Le ondate superate: tutte se ripulito, altrimenti quelle prima di quella in cui si è caduti.
@@ -123,11 +133,20 @@ const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
               <Avatar :look="look" />
             </g>
           </g>
-          <!-- La spada di legno, finché non ci saranno le armi -->
-          <g :key="`sword-${state.swing}`" class="sword" stroke="#2d2a4a" stroke-width="4" stroke-linecap="round">
-            <path d="M 34 -46 L 74 -100" stroke-width="10" />
-            <path d="M 34 -46 L 74 -100" stroke="#e8c48a" stroke-width="5" />
-            <path d="M 26 -54 L 42 -38" stroke="#a0673a" stroke-width="7" />
+          <!-- L'armatura, sul petto -->
+          <g v-if="runGear.armor" transform="translate(2 -30) scale(0.55)">
+            <GearIcon :id="runGear.armor" />
+          </g>
+          <!-- L'arma forgiata, con l'impugnatura nella mano, o la spada di legno di partenza -->
+          <g :key="`sword-${state.swing}`" class="sword">
+            <g v-if="runGear.weapon" transform="translate(34 -46) rotate(-8) scale(1.2) translate(10 -10)">
+              <GearIcon :id="runGear.weapon" />
+            </g>
+            <g v-else stroke="#2d2a4a" stroke-width="4" stroke-linecap="round">
+              <path d="M 34 -46 L 74 -100" stroke-width="10" />
+              <path d="M 34 -46 L 74 -100" stroke="#e8c48a" stroke-width="5" />
+              <path d="M 26 -54 L 42 -38" stroke="#a0673a" stroke-width="7" />
+            </g>
           </g>
         </g>
         <!-- Le zampe arrivano da destra a ogni ondata: la chiave cambia e l'ingresso riparte -->
@@ -160,7 +179,7 @@ const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
     <!-- In alto durante la run: ondata, vita, zuppe e bottino -->
     <div v-if="phase === 'run'" class="run-hud" role="status">
       <span class="wave">Ondata {{ state.wave }}<small>/{{ MAX_WAVES }}</small></span>
-      <span class="hp" :title="`${state.hp} HP su ${PLAYER_HP}`">
+      <span class="hp" :title="`${state.hp} HP su ${state.maxHp}`">
         <span class="hp-fill" :class="{ low: state.hp <= SOUP_BELOW }" :style="{ width: `${hpPercent}%` }" />
         <span class="hp-text">❤ {{ state.hp }}</span>
       </span>
@@ -188,6 +207,20 @@ const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
             <span>{{ inventory.soups.value === 1 ? 'zuppa' : 'zuppe' }}</span>
           </div>
         </div>
+        <div class="gear">
+          <div class="gear-slot" :class="{ none: !weapon }">
+            <svg v-if="weapon" viewBox="-36 -36 72 72" aria-hidden="true"><GearIcon :id="weapon.id" /></svg>
+            <span v-else class="gear-empty" aria-hidden="true">⚔</span>
+            <span class="gear-text"><small>Arma</small>{{ weapon?.name ?? 'Spada di legno' }}</span>
+          </div>
+          <div class="gear-slot" :class="{ none: !armor }">
+            <svg v-if="armor" viewBox="-36 -36 72 72" aria-hidden="true"><GearIcon :id="armor.id" /></svg>
+            <span v-else class="gear-empty" aria-hidden="true">🛡</span>
+            <span class="gear-text"><small>Armatura</small>{{ armor?.name ?? 'Nessuna' }}</span>
+          </div>
+          <p class="gear-stats">⚔ {{ stats.damage[0] }}–{{ stats.damage[1] }} danni · ❤ {{ stats.maxHp }} HP · 🛡 −{{ Math.round(stats.defense * 100) }}% danni</p>
+        </div>
+        <p v-if="!weapon || !armor" class="note">Armi e armature si forgiano col crafting <kbd>R</kbd> (minerali della miniera e materiali del dungeon) e si indossano dalla finestra del personaggio <kbd>C</kbd>.</p>
         <p v-if="!inventory.tickets.value" class="note">Nessun ticket. Al lago, una volta su 15, insieme al pesce sale una bottiglia con un ticket dentro.</p>
         <p v-else-if="!inventory.soups.value" class="note">Niente zuppe: la run sarà breve. Col crafting <kbd>R</kbd> 3 pesci diventano una zuppa, che sotto i {{ SOUP_BELOW }} HP ti ridà {{ SOUP_HEAL }} HP.</p>
         <p v-else class="note">Le zuppe si bevono da sole sotto i {{ SOUP_BELOW }} HP: più ne hai, più ondate superi e più bottino porti a casa.</p>
@@ -457,6 +490,59 @@ h2 {
 }
 .supply span {
   color: #6b6890;
+  font-size: 14px;
+}
+.gear {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.gear-slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border: 3px solid #2d2a4a;
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+}
+.gear-slot.none {
+  background: #f1ede2;
+}
+.gear-slot svg {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+.gear-empty {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  opacity: 0.3;
+}
+.gear-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.15;
+}
+.gear-text small {
+  color: #6b6890;
+  font-size: 12px;
+}
+.gear-stats {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 3px 8px 5px;
+  border-radius: 10px;
+  background: #3a2d5c;
+  color: #fff8e6;
   font-size: 14px;
 }
 .note,

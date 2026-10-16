@@ -1,4 +1,4 @@
-import { DUNGEON_TICKET, FISH, FISH_SOUP, fishPrice, recipe, shopItem, type Slot } from '@dev-city/shared/catalog'
+import { DUNGEON_TICKET, FISH, FISH_SOUP, fishPrice, gear, itemName, recipe, sellPrice, shopItem, type GearSlot, type Slot } from '@dev-city/shared/catalog'
 import { simulateRun } from '@dev-city/shared/dungeon'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from './db/index.ts'
@@ -36,7 +36,17 @@ export async function inventoryOf(userId: string) {
       .from(playerItem)
       .where(eq(playerItem.userId, userId))
       .orderBy(desc(playerItem.acquiredAt), desc(playerItem.id)),
-    db.select({ hat: playerEquipment.hat, color: playerEquipment.color }).from(playerEquipment).where(eq(playerEquipment.userId, userId)),
+    db
+      .select({
+        hat: playerEquipment.hat,
+        color: playerEquipment.color,
+        weapon: playerEquipment.weapon,
+        armor: playerEquipment.armor,
+        rod: playerEquipment.rod,
+        pickaxe: playerEquipment.pickaxe,
+      })
+      .from(playerEquipment)
+      .where(eq(playerEquipment.userId, userId)),
   ])
   return {
     gold,
@@ -45,7 +55,14 @@ export async function inventoryOf(userId: string) {
       weightKg: weightG === null ? null : weightG / 1000,
       price: weightG === null ? null : fishPrice(weightG),
     })),
-    equipment: { hat: equipment?.hat ?? null, color: equipment?.color ?? null },
+    equipment: {
+      hat: equipment?.hat ?? null,
+      color: equipment?.color ?? null,
+      weapon: equipment?.weapon ?? null,
+      armor: equipment?.armor ?? null,
+      rod: equipment?.rod ?? null,
+      pickaxe: equipment?.pickaxe ?? null,
+    },
   }
 }
 
@@ -59,6 +76,22 @@ export async function sellFish(userId: string, ids: number[]) {
       .returning({ weightG: playerItem.weightG })
     if (!sold.length) throw new InventoryError(404, 'Questi pesci non ci sono più.')
     await tx.insert(goldLedger).values(sold.map((f) => ({ userId, amount: fishPrice(f.weightG ?? 0), reason: 'sell', itemId: FISH })))
+  })
+  return inventoryOf(userId)
+}
+
+// Vende oggetti a quantità che hanno un prezzo (pietre, minerali e gemme della miniera): id del
+// catalogo → quanti. Come per gli acquisti la riga del giocatore resta bloccata fino alla fine.
+export async function sellItems(userId: string, items: Record<string, number>) {
+  const entries = Object.entries(items)
+  for (const [id] of entries) if (sellPrice(id) === null) throw new InventoryError(400, `${itemName(id)} non si vende.`)
+  await db.transaction(async (tx) => {
+    await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for('update')
+    for (const [id, n] of entries) {
+      if ((await countOf(tx, userId, id)) < n) throw new InventoryError(404, `Non hai ${n} × ${itemName(id)}.`)
+      await addCount(tx, userId, id, -n)
+      await tx.insert(goldLedger).values({ userId, amount: sellPrice(id)! * n, reason: 'sell', itemId: id })
+    }
   })
   return inventoryOf(userId)
 }
@@ -104,8 +137,12 @@ export async function buy(userId: string, itemId: string) {
 }
 
 // Indossa un oggetto (suo, o gratis) nel posto giusto, oppure lo toglie con itemId null.
-export async function equip(userId: string, slot: Slot, itemId: string | null) {
-  if (itemId !== null) {
+// Cappelli e colori vengono dallo shop, armi, armature, canne e picconi dal crafting.
+export async function equip(userId: string, slot: Slot | GearSlot, itemId: string | null) {
+  if (itemId !== null && slot !== 'hat' && slot !== 'color') {
+    if (gear(itemId)?.slot !== slot) throw new InventoryError(400, 'Questo oggetto non va lì.')
+    if (!(await owns(db, userId, itemId))) throw new InventoryError(404, 'Non ce l\'hai: si fa col crafting.')
+  } else if (itemId !== null) {
     const item = shopItem(itemId)
     if (!item || item.kind !== slot) throw new InventoryError(400, 'Questo oggetto non va lì.')
     if (item.price > 0 && !(await owns(db, userId, itemId))) throw new InventoryError(404, 'Non ce l\'hai: si compra allo shop.')
@@ -117,34 +154,50 @@ export async function equip(userId: string, slot: Slot, itemId: string | null) {
   return inventoryOf(userId)
 }
 
-// Cucina una ricetta coi pesci più leggeri del giocatore. Come per gli acquisti la sua riga
-// resta bloccata fino alla fine: due ricette insieme non usano gli stessi pesci.
+// Una ricetta del crafting: toglie gli ingredienti e aggiunge quello che ne esce. Se servono
+// pesci si prendono i più leggeri del giocatore. Come per gli acquisti la sua riga resta
+// bloccata fino alla fine: due ricette insieme non usano gli stessi ingredienti.
 export async function craft(userId: string, recipeId: string) {
   const r = recipe(recipeId)
   if (!r) throw new InventoryError(404, 'Questa ricetta non esiste.')
   await db.transaction(async (tx) => {
     await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for('update')
-    const fish = await tx
-      .select({ id: playerItem.id })
-      .from(playerItem)
-      .where(and(eq(playerItem.userId, userId), eq(playerItem.itemId, FISH)))
-      .orderBy(asc(playerItem.weightG), asc(playerItem.id))
-      .limit(r.fish)
-    if (fish.length < r.fish) throw new InventoryError(409, `Servono ${r.fish} pesci.`)
-    await tx.delete(playerItem).where(inArray(playerItem.id, fish.map((f) => f.id)))
+    const missing: string[] = []
+    for (const [id, n] of Object.entries(r.needs)) {
+      const have = await countOf(tx, userId, id)
+      if (have < n) missing.push(`${n - have} × ${itemName(id)}`)
+    }
+    const fish = r.fish
+      ? await tx
+          .select({ id: playerItem.id })
+          .from(playerItem)
+          .where(and(eq(playerItem.userId, userId), eq(playerItem.itemId, FISH)))
+          .orderBy(asc(playerItem.weightG), asc(playerItem.id))
+          .limit(r.fish)
+      : []
+    if (fish.length < r.fish) missing.unshift(`${r.fish - fish.length} ${r.fish - fish.length === 1 ? 'pesce' : 'pesci'}`)
+    if (missing.length) throw new InventoryError(409, `Ti mancano: ${missing.join(', ')}.`)
+    if (fish.length) await tx.delete(playerItem).where(inArray(playerItem.id, fish.map((f) => f.id)))
+    for (const [id, n] of Object.entries(r.needs)) await addCount(tx, userId, id, -n)
     await addCount(tx, userId, r.makes, 1)
   })
   return inventoryOf(userId)
 }
 
-// Una run nel dungeon: usa un ticket, la simula tutta qui (packages/shared/src/dungeon.ts) e
-// salva subito cosa ne esce: zuppe bevute, monete e materiali. Il giocatore poi la guarda
-// (run.events), ma l'esito è già deciso e nell'inventario.
+// Una run nel dungeon: usa un ticket, la simula tutta qui (packages/shared/src/dungeon.ts) con
+// l'arma e l'armatura indossate e salva subito cosa ne esce: zuppe bevute, monete e materiali.
+// Il giocatore poi la guarda (run.events), ma l'esito è già deciso e nell'inventario.
 export async function runDungeon(userId: string) {
   const run = await db.transaction(async (tx) => {
     await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for('update')
     if ((await countOf(tx, userId, DUNGEON_TICKET)) < 1) throw new InventoryError(402, 'Serve un ticket del dungeon: si ripesca al lago, in una bottiglia.')
-    const run = simulateRun(await countOf(tx, userId, FISH_SOUP))
+    const [worn] = await tx.select({ weapon: playerEquipment.weapon, armor: playerEquipment.armor }).from(playerEquipment).where(eq(playerEquipment.userId, userId))
+    // Solo quello che ha ancora: un'arma scambiata non conta più.
+    const loadout = {
+      weapon: worn?.weapon && (await countOf(tx, userId, worn.weapon)) > 0 ? worn.weapon : null,
+      armor: worn?.armor && (await countOf(tx, userId, worn.armor)) > 0 ? worn.armor : null,
+    }
+    const run = simulateRun(await countOf(tx, userId, FISH_SOUP), loadout)
     await addCount(tx, userId, DUNGEON_TICKET, -1)
     await addCount(tx, userId, FISH_SOUP, -run.soupsUsed)
     for (const [itemId, n] of Object.entries(run.materials)) await addCount(tx, userId, itemId, n)

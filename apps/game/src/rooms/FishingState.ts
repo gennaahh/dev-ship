@@ -14,6 +14,9 @@ export const FishingSeat = schema({
   weight: t.number(),
   // Se insieme all'ultimo pesce è salita la bottiglia col ticket del dungeon.
   bottle: t.boolean(),
+  // La canna in mano (id del catalogo, RODS), '' = quella di sempre: accorcia l'attesa e porta
+  // più pesci speciali, e tutti la vedono.
+  tool: t.string(),
 }, 'FishingSeat')
 export type FishingSeat = SchemaType<typeof FishingSeat>
 

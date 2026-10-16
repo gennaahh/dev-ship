@@ -1,5 +1,6 @@
 import { SQL } from 'bun'
 import type { Client } from '@colyseus/core'
+import type { ToolSlot } from '@dev-city/shared/catalog'
 import type { MapSchema } from '@colyseus/schema'
 import type { PlayerAuth } from './auth.ts'
 import type { PlazaPlayer } from './rooms/PlazaState.ts'
@@ -17,6 +18,21 @@ export async function loadLook(userId: string) {
   } catch (e) {
     console.error('Look non letto:', e)
     return { hat: '', color: '' }
+  }
+}
+
+// La canna o il piccone che un giocatore tiene in mano (player_equipment), se ce l'ha ancora:
+// id del catalogo, '' = niente (uno scambiato non conta più).
+export async function loadTool(userId: string, slot: ToolSlot) {
+  try {
+    const [row] = await sql`select rod, pickaxe from player_equipment where user_id = ${userId}`
+    const id: string | null = row?.[slot] ?? null
+    if (!id) return ''
+    const [has] = await sql`select 1 from player_item where user_id = ${userId} and item_id = ${id} and quantity > 0`
+    return has ? id : ''
+  } catch (e) {
+    console.error('Attrezzo non letto:', e)
+    return ''
   }
 }
 

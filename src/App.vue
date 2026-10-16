@@ -40,9 +40,9 @@ function leave() {
 const fullscreen = ref(false)
 
 // Fuori dagli edifici la chat è quella della città (in alto a sinistra), dentro quella del
-// luogo (in basso a sinistra). La piazza e la zona di pesca hanno la loro: passa dalla stanza
+// luogo (in basso a sinistra). La piazza, la zona di pesca e la miniera hanno la loro: passa dalla stanza
 // del luogo, che mette i fumetti sui personaggi.
-const OWN_CHAT = ['piazza', 'pesca']
+const OWN_CHAT = ['piazza', 'pesca', 'miniera']
 const chatChannel = computed(() => place.value?.id ?? 'city')
 // Col cartellone zoomato la chat della città si ripiega, per non coprirne l'angolo.
 const boardZoomed = ref(false)
@@ -95,7 +95,7 @@ const trade = useTrade()
     <TradeInvites />
     <PlayerMenu v-if="trade.menu.value" />
   </template>
-  <!-- In alto a destra il proprio personaggio, lo zainetto dell'inventario, la pentola del
+  <!-- In alto a destra il proprio personaggio, lo zainetto dell'inventario, l'incudine del
        crafting e lo schermo intero. -->
   <div class="corner">
     <PlayerBadge v-if="BACKEND_ENABLED" />

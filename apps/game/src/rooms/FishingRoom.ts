@@ -1,8 +1,9 @@
 import { Room, ServerError, validate, type Client, type Delayed } from '@colyseus/core'
+import { tool } from '@dev-city/shared/catalog'
 import { z } from 'zod'
 import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { ChatInput, cleanText, createMessage, history, RateLimit, TypingInput } from '../chat.ts'
-import { loadLook, refreshLook } from '../db.ts'
+import { loadLook, loadTool, refreshLook } from '../db.ts'
 import { BIG_KG, BIG_RESULT_MS, BITE_MS, biteDelay, pointsFor, RESULT_MS, rollBottle, rollCatch, saveCatch } from '../fishing.ts'
 import { clampToLakeside, lakeEntrance, SEAT_SPOTS, SEATS, stepBack, walkLakeside } from '../lake.ts'
 import { TradeDesk } from '../trade.ts'
@@ -20,7 +21,8 @@ type FishingClient = Client<{ auth: PlayerAuth }>
 // La zona di pesca: si cammina attorno al lago e si chiacchiera come in piazza, e ci si siede
 // su una delle dieci sedie camminandoci. Una persona per sedia: chi ci arriva per primo.
 // Seduti si aspetta: dopo 10-20 minuti abbocca, e 3 volte su 4 il pesce resta all'amo. Una
-// volta su 15 col pesce sale anche una bottiglia, col ticket per il dungeon.
+// volta su 15 col pesce sale anche una bottiglia, col ticket per il dungeon. Con una canna del
+// crafting in mano si aspetta di meno e i pesci speciali sono più frequenti.
 // Le sedie sono le stesse per tutti, quindi la stanza è una sola.
 export class FishingRoom extends Room<{ state: FishingState; client: FishingClient }> {
   maxClients = 100
@@ -37,7 +39,7 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
   private seatOfUser = new Map<string, string>()
   private rate = new RateLimit()
   // Gli scambi tra chi è al lago (col tasto destro su un giocatore).
-  private trades = new TradeDesk(this, (userIds) => userIds.forEach((id) => refreshLook(this.clients, this.state.players, id)))
+  private trades = new TradeDesk(this, (userIds) => userIds.forEach((id) => this.refresh(id)))
 
   static async onAuth(token: string) {
     if (!token) throw new ServerError(401, 'Serve il login')
@@ -73,7 +75,7 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
       if (player) player.typing = typing
     }),
     // Ha cambiato equipaggiamento: si rilegge dal database.
-    look: (client: FishingClient) => refreshLook(this.clients, this.state.players, client.auth!.userId),
+    look: (client: FishingClient) => this.refresh(client.auth!.userId),
     history: async (client: Client) => {
       client.send('history', await history.list(this.historyKey))
     },
@@ -126,9 +128,29 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
     s.since = Date.now()
     s.weight = 0
     s.bottle = false
+    s.tool = ''
     this.state.seats.set(key, s)
     this.seatOfUser.set(auth.userId, key)
-    this.schedule(key, biteDelay(), () => this.bite(key, auth.userId))
+    // La prima attesa parte quando si sa che canna ha in mano.
+    loadTool(auth.userId, 'rod').then((t) => {
+      if (this.state.seats.get(key) !== s) return
+      s.tool = t
+      this.schedule(key, biteDelay(this.rod(s).speed), () => this.bite(key, auth.userId))
+    })
+  }
+
+  // La canna di chi è seduto: senza, quella di sempre.
+  private rod(seat: FishingSeat) {
+    return tool(seat.tool) ?? { speed: 0, luck: 0 }
+  }
+
+  // Look e canna rilette dal database, dopo un cambio di equipaggiamento o uno scambio. La canna
+  // nuova conta dalla prossima attesa.
+  private refresh(userId: string) {
+    refreshLook(this.clients, this.state.players, userId)
+    const key = this.seatOfUser.get(userId)
+    const seat = key === undefined ? undefined : this.state.seats.get(key)
+    if (seat) loadTool(userId, 'rod').then((t) => this.state.seats.get(key!) === seat && (seat.tool = t))
   }
 
   private schedule(key: string, ms: number, fn: () => void) {
@@ -146,7 +168,7 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
   private resolve(key: string, userId: string) {
     const seat = this.state.seats.get(key)
     if (!seat) return
-    const kg = rollCatch()
+    const kg = rollCatch(this.rod(seat).luck)
     if (kg === null) {
       seat.phase = 'escaped'
     } else {
@@ -167,7 +189,7 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
       const s = this.state.seats.get(key)
       if (!s) return
       s.phase = 'waiting'
-      this.schedule(key, Math.max(1000, biteDelay() - wait), () => this.bite(key, userId))
+      this.schedule(key, Math.max(1000, biteDelay(this.rod(s).speed) - wait), () => this.bite(key, userId))
     })
   }
 

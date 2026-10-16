@@ -1,10 +1,11 @@
 import { computed, effectScope, ref, watch } from 'vue'
-import { DUNGEON_TICKET, FISH, FISH_SOUP, MATERIALS } from '@dev-city/shared/catalog'
+import { ARMORS, DUNGEON_TICKET, FISH, FISH_SOUP, MATERIALS, MINERALS, PICKAXES, RODS, WEAPONS } from '@dev-city/shared/catalog'
 import { authClient } from '../auth.js'
 import { API_URL, BACKEND_ENABLED } from '../config.js'
 import { speciesFor } from '../city/fishing/lake.js'
 
-// Inventario, monete d'oro ed equipaggiamento del giocatore, dall'API. È uno solo per tutta
+// Inventario, monete d'oro ed equipaggiamento del giocatore (cappello, colore, arma, armatura, canna
+// e piccone), dall'API. È uno solo per tutta
 // la pagina (la finestra dell'inventario, lo shop, il proprio personaggio nei luoghi):
 // si ricarica da solo al login e si svuota al logout. Senza backend resta vuoto.
 // ready: c'è un inventario (loggati e caricato). open: la finestra aperta, 'bag' (l'inventario,
@@ -16,7 +17,7 @@ export function useInventory() {
   return store
 }
 
-const NO_EQUIPMENT = { hat: null, color: null }
+const NO_EQUIPMENT = { hat: null, color: null, weapon: null, armor: null, rod: null, pickaxe: null }
 
 function createStore() {
   const data = ref(null)
@@ -104,12 +105,21 @@ function createStore() {
   // I pesci, dal più recente, con la specie che si vede al lago.
   const fish = computed(() => items.value.filter((i) => i.itemId === FISH).map((f) => ({ ...f, species: speciesFor(f.weightKg) })))
   const owned = computed(() => new Set(items.value.map((i) => i.itemId)))
-  // Zuppe, ticket e materiali sono una riga ciascuno, con la quantità.
-  const count = (itemId) => items.value.find((i) => i.itemId === itemId)?.quantity ?? 0
+  // Zuppe, ticket, materiali, minerali, armi e armature sono una riga ciascuno, con la quantità.
+  const counts = computed(() => new Map(items.value.filter((i) => i.itemId !== FISH).map((i) => [i.itemId, i.quantity])))
+  const count = (itemId) => counts.value.get(itemId) ?? 0
   const soups = computed(() => count(FISH_SOUP))
   const tickets = computed(() => count(DUNGEON_TICKET))
   // Tutti i materiali, nell'ordine del catalogo, anche quelli a zero.
   const materials = computed(() => MATERIALS.map((m) => ({ ...m, quantity: count(m.id) })))
+  // Pietre, minerali e gemme della miniera, nell'ordine del catalogo, anche quelli a zero.
+  const minerals = computed(() => MINERALS.map((m) => ({ ...m, quantity: count(m.id) })))
+  // Armi, armature, canne e picconi fatti col crafting: solo quelli che si hanno.
+  const owning = (list) => computed(() => list.filter((g) => count(g.id) > 0).map((g) => ({ ...g, quantity: count(g.id) })))
+  const weapons = owning(WEAPONS)
+  const armors = owning(ARMORS)
+  const rods = owning(RODS)
+  const pickaxes = owning(PICKAXES)
 
   return {
     ready: computed(() => data.value !== null),
@@ -119,6 +129,13 @@ function createStore() {
     soups,
     tickets,
     materials,
+    minerals,
+    weapons,
+    armors,
+    rods,
+    pickaxes,
+    // Quanti se ne hanno di un oggetto a quantità (id del catalogo).
+    count,
     // Cappelli e colori: si hanno se comprati, o se sono gratis.
     owns: (item) => item.price === 0 || owned.value.has(item.id),
     busy,
@@ -126,6 +143,8 @@ function createStore() {
     open,
     refresh,
     sell: (ids) => act('inventory/sell', { ids }),
+    // Pietre, minerali e gemme: id del catalogo → quanti.
+    sellItems: (items) => act('inventory/sell-items', { items }),
     buy: (itemId) => act('shop/buy', { itemId }),
     equip: (slot, itemId) => act('inventory/equip', { slot, itemId }),
     craft: (recipeId) => act('inventory/craft', { recipeId }),

@@ -8,7 +8,8 @@ import { useTrade } from '../composables/useTrade.js'
 import ItemIcon from './ItemIcon.vue'
 
 // La finestra dello scambio, per tutti e due i giocatori: a sinistra la propria offerta (monete,
-// pesci e oggetti scelti dal proprio inventario), a destra quella dell'altro. Poi la doppia
+// pesci e oggetti scelti dal proprio inventario: zuppe, ticket, materiali, minerali, armi,
+// armature e cappelli), a destra quella dell'altro. Poi la doppia
 // conferma: "Pronto" blocca le offerte, quando lo sono tutti e due si passa al controllo finale
 // e a "Conferma scambio". Ogni cambio di offerta toglie le conferme di tutti e due.
 // Finito lo scambio, mostra cosa si è dato e ricevuto.
@@ -48,6 +49,8 @@ const stock = computed(() => [
   { id: FISH_SOUP, n: inventory.soups.value },
   { id: DUNGEON_TICKET, n: inventory.tickets.value },
   ...inventory.materials.value.map((m) => ({ id: m.id, n: m.quantity })),
+  ...inventory.minerals.value.map((m) => ({ id: m.id, n: m.quantity })),
+  ...[...inventory.weapons.value, ...inventory.armors.value, ...inventory.rods.value, ...inventory.pickaxes.value].map((g) => ({ id: g.id, n: g.quantity, worn: inventory.equipment.value[g.slot] === g.id })),
   ...HATS.filter((h) => inventory.owns(h)).map((h) => ({ id: h.id, n: 1, worn: inventory.equipment.value.hat === h.id })),
 ].map((s) => ({ ...s, left: s.n - (draft.items[s.id] ?? 0) })).filter((s) => s.left > 0))
 

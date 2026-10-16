@@ -6,7 +6,8 @@ import { z } from 'zod'
 import { auth } from './auth.ts'
 import { env, isAllowedOrigin } from './env.ts'
 import { fishingLeaderboard } from './fishing.ts'
-import { buy, craft, equip, InventoryError, inventoryOf, runDungeon, sellFish } from './inventory.ts'
+import { buy, craft, equip, InventoryError, inventoryOf, runDungeon, sellFish, sellItems } from './inventory.ts'
+import { mineBoard } from './mine.ts'
 
 const app = new Hono<{ Variables: { userId: string } }>()
 
@@ -29,12 +30,18 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 // Classifica della zona di pesca (oggi, settimana, sempre) e ultime catture: pubblica, la vede
 // anche chi non è entrato.
 app.get('/api/fishing/leaderboard', async (c) => c.json(await fishingLeaderboard()))
+// Il cartellone della miniera: classifica delle scoperte (oggi, settimana, sempre) e le ultime.
+app.get('/api/mine/leaderboard', async (c) => c.json(await mineBoard()))
 
 // Inventario, monete ed equipaggiamento: solo da loggati, ognuno il suo.
 // csrf: i form di altri siti (che il browser manda col cookie) non passano, il fetch in JSON sì.
 const SellInput = z.object({ ids: z.array(z.number().int().positive()).min(1).max(1000) })
+// id del catalogo → quanti, per pietre, minerali e gemme.
+const SellItemsInput = z.object({
+  items: z.record(z.string().max(40), z.number().int().min(1).max(100_000)).refine((o) => Object.keys(o).length > 0 && Object.keys(o).length <= 20),
+})
 const BuyInput = z.object({ itemId: z.string().max(40) })
-const EquipInput = z.object({ slot: z.enum(['hat', 'color']), itemId: z.string().max(40).nullable() })
+const EquipInput = z.object({ slot: z.enum(['hat', 'color', 'weapon', 'armor', 'rod', 'pickaxe']), itemId: z.string().max(40).nullable() })
 const CraftInput = z.object({ recipeId: z.string().max(40) })
 
 app.use('/api/inventory/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
@@ -68,6 +75,10 @@ app.get('/api/inventory', async (c) => c.json(await inventoryOf(c.get('userId'))
 app.post('/api/inventory/sell', async (c) => {
   const input = await body(c, SellInput)
   return input ? c.json(await sellFish(c.get('userId'), input.ids)) : invalid(c)
+})
+app.post('/api/inventory/sell-items', async (c) => {
+  const input = await body(c, SellItemsInput)
+  return input ? c.json(await sellItems(c.get('userId'), input.items)) : invalid(c)
 })
 app.post('/api/inventory/equip', async (c) => {
   const input = await body(c, EquipInput)

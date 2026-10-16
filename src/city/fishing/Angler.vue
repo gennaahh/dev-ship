@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import Avatar from '../Avatar.vue'
 import SpeechBubble from '../SpeechBubble.vue'
 import TicketBottle from '../dungeon/TicketBottle.vue'
+import { rodLook } from '../mine/tools.js'
 import Fish from './Fish.vue'
 import { BIG_KG, formatKg, pointsFor, SCALE, speciesFor } from './lake.js'
 
@@ -16,13 +17,16 @@ import { BIG_KG, formatKg, pointsFor, SCALE, speciesFor } from './lake.js'
 // con la bottiglia del ticket del dungeon), escaped.
 const props = defineProps({
   spot: { type: Object, required: true },
-  // null se la sedia è libera, altrimenti { name, phase, weight, bottle, me, look, say, typing }.
+  // null se la sedia è libera, altrimenti { name, phase, weight, bottle, tool, me, look, say, typing }.
+  // tool: la canna del crafting in mano (id del catalogo), '' o assente quella di sempre.
   angler: { type: Object, default: null },
   // La sedia libera si può prendere (da loggati, col server raggiungibile).
   canSit: { type: Boolean, default: false },
 })
 // menu: tasto destro su chi pesca (l'evento del browser), per il menu degli scambi.
 const emit = defineEmits(['sit', 'menu'])
+
+const rod = computed(() => rodLook(props.angler?.tool))
 
 const SEAT_H = 22 // il personaggio sta seduto un po' più in alto dei piedi della sedia
 
@@ -150,8 +154,9 @@ function sit(e) {
       <g :key="`gear-${phase}`" stroke-linecap="round" fill="none" :class="`gear ${phase}`">
         <g class="rod" :style="geo.pivot">
           <path :d="phase === 'bite' ? geo.bentRod : geo.rod" stroke="#2d2a4a" stroke-width="9" />
-          <path :d="phase === 'bite' ? geo.bentRod : geo.rod" stroke="#c98a4b" stroke-width="4" />
-          <circle :cx="geo.hand.x - geo.dir * 4" :cy="geo.hand.y + 6" r="6" fill="#4b4870" stroke="#2d2a4a" stroke-width="3" />
+          <path :d="phase === 'bite' ? geo.bentRod : geo.rod" :stroke="rod.pole" stroke-width="4" />
+          <circle :cx="geo.hand.x - geo.dir * 4" :cy="geo.hand.y + 6" r="6" :fill="rod.reel" stroke="#2d2a4a" stroke-width="3" />
+          <circle v-if="rod.gem" :cx="geo.hand.x - geo.dir * 4" :cy="geo.hand.y + 6" r="2.2" :fill="rod.gem" stroke="#2d2a4a" stroke-width="1.5" />
         </g>
         <path v-if="phase === 'waiting'" class="line" :d="geo.sag" stroke="#fff8e6" stroke-width="2" />
         <path v-else-if="phase === 'bite'" class="line taut" :d="geo.taut" stroke="#fff8e6" stroke-width="2.5" />

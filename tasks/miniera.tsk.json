@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "t1-miniera",
+      "title": "T1 — Miniera: scavare ai filoni",
+      "description": "Seconda attività idle, come la pesca: ci si mette a un filone e si raccolgono pietre e, più di rado, minerali e gemme da vendere o usare nel crafting.",
+      "status": "in_progress",
+      "steps": [
+        {
+          "title": "Requirements",
+          "steps": [
+            "Si cammina in miniera e ci si mette a scavare a un filone libero (8, uno per giocatore), come le sedie del lago",
+            "Una pietra ogni 4-6 minuti, una scoperta (minerale o gemma) ogni 15-25, con chance per rarità",
+            "Tutto si vende dall'inventario oppure va nel crafting",
+            "Rende circa come la pesca (script di bilanciamento a confronto)",
+            "Scoperte preziose festeggiate a tutto schermo, cartellone con classifica e ultime scoperte",
+            "Multigiocatore con chat e scambi; demo senza backend",
+            "MINING_FAST=1 per provare in sviluppo"
+          ]
+        },
+        {
+          "title": "Edits",
+          "steps": [
+            {
+              "title": "packages/shared: MINERALS, prezzi e chance nel catalogo; mine.ts coi tempi e rollMineral; scripts/mine-balance.ts",
+              "status": "done"
+            },
+            {
+              "title": "apps/api: tabella mine_find (migrazione 0004_mine), GET /api/mine/leaderboard, POST /api/inventory/sell-items",
+              "status": "done"
+            },
+            {
+              "title": "apps/game: MineRoom/MineState, cave.ts (filoni e camminata), mine.ts (tempi e salvataggio), stanza 'mine' registrata",
+              "status": "done"
+            },
+            {
+              "title": "Frontend: MineInterior, Miner, MineBoard, BigFind, useMineRoom, useMineLeaderboard, icone dei minerali",
+              "status": "done"
+            },
+            {
+              "title": "README, changelog, .env.example (MINING_FAST)",
+              "status": "done"
+            }
+          ]
+        },
+        {
+          "title": "Tests",
+          "steps": [
+            "Avvio: bun run infra:up, bun run db:migrate (applica 0004_mine), poi bun run dev:all con FISHING_FAST=1 e MINING_FAST=1 in .env",
+            "Senza login apri #/miniera: passeggi da solo e la squadra demo scava, col cartellone DEMO",
+            "Entra (dev) come Minatore1, apri #/miniera, clicca il piccone su un filone libero: ci vai e inizi a scavare, il cartellino in alto dice da quanto scavi",
+            "Ogni 4-6 secondi salta una pietra sul mucchietto; dopo 15-25 secondi sale un minerale o una gemma dal filone col suo prezzo",
+            "Apri l'inventario (I): nella sezione Miniera ci sono pietre e scoperte; vendine una, poi Tutti di un tipo, poi Vendi tutto (doppio clic): le monete salgono del prezzo giusto",
+            "In una seconda finestra privata entra come Minatore2 e cerca di prendere lo stesso filone: chi arriva dopo legge che è occupato; vedi l'altro scavare e la chat della miniera",
+            "Clicca sul pavimento mentre scavi: chiede conferma; Smetti libera il filone",
+            "Dopo qualche scoperta il cartellone mostra Minatore1 in OGGI/SETTIMANA/SEMPRE e la scoperta in ULTIME",
+            "Tasto destro su Minatore2 in miniera: Richiedi scambio, scambia qualche pietra",
+            "Telefono (finestra stretta): scena, cartellino e chat leggibili",
+            "bun packages/shared/scripts/mine-balance.ts: miniera ~25 monete/h, pesca ~19 più i ticket"
+          ]
+        },
+        {
+          "title": "Fix",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": "t2-crafting",
+      "title": "T2 — Rifare la finestra del crafting",
+      "description": "Il crafting passa da una ricetta sola a tre banchi (cucina, armi, armature) con ingredienti di qualsiasi tipo.",
+      "status": "in_progress",
+      "steps": [
+        {
+          "title": "Requirements",
+          "steps": [
+            "Ricette con ingredienti a quantità (minerali, materiali del dungeon) oltre ai pesci",
+            "Tre banchi a schede: cucina, armi, armature",
+            "Ogni ricetta mostra cosa si ha, cosa manca e da dove viene",
+            "Confronto delle statistiche con quello che si indossa, ed equipaggiamento subito dopo il crafting"
+          ]
+        },
+        {
+          "title": "Edits",
+          "steps": [
+            {
+              "title": "packages/shared: RECIPES con category, needs e fish; RECIPE_CATEGORIES",
+              "status": "done"
+            },
+            {
+              "title": "apps/api: craft generico, con l'elenco di cosa manca nell'errore",
+              "status": "done"
+            },
+            {
+              "title": "Frontend: CraftingWindow rifatta",
+              "status": "done"
+            }
+          ]
+        },
+        {
+          "title": "Tests",
+          "steps": [
+            "Avvio: bun run infra:up, bun run db:migrate (applica 0004_mine), poi bun run dev:all con FISHING_FAST=1 e MINING_FAST=1 in .env",
+            "Da loggato premi R: tre schede Cucina/Armi/Armature, ognuna col numero di ricette che puoi fare",
+            "Con pochi materiali scegli Spada di ferro: ingredienti rossi con hai/servono, tooltip con la provenienza, pulsante disattivato ed elenco di cosa manca",
+            "Con 3 pesci cucina una zuppa dalla scheda Cucina: usa i più leggeri, +1 sulla scodella",
+            "Dopo aver forgiato un'arma compare Impugna/Indossa e il confronto con quella che hai"
+          ]
+        },
+        {
+          "title": "Fix",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": "t3-armi-armature",
+      "title": "T3 — Armi e armature craftabili",
+      "description": "Sei armi e sei armature dai minerali della miniera e dai materiali del dungeon, che contano nelle run del dungeon.",
+      "status": "in_progress",
+      "steps": [
+        {
+          "title": "Requirements",
+          "steps": [
+            "6 armi (danni) e 6 armature (vita in più e danni parati), a livelli di rarità crescente",
+            "Si indossano un'arma e un'armatura dalla finestra del personaggio",
+            "Nel dungeon contano: ogni livello rende un po' di più, senza rendere il dungeon una passeggiata",
+            "Non si vendono, si scambiano; scambiare l'ultima copia di quella indossata la toglie"
+          ]
+        },
+        {
+          "title": "Edits",
+          "steps": [
+            {
+              "title": "packages/shared: WEAPONS, ARMORS e GEAR nel catalogo; dungeon.ts con Loadout e statsOf; dungeon-balance.ts per livelli",
+              "status": "done"
+            },
+            {
+              "title": "apps/api: colonne weapon e armor in player_equipment, equip per armi e armature, run del dungeon con quello che si indossa",
+              "status": "done"
+            },
+            {
+              "title": "apps/game/src/trade.ts: l'ultima copia scambiata di un'arma o armatura indossata si toglie",
+              "status": "done"
+            },
+            {
+              "title": "Frontend: icone (GearIcon), finestre di inventario, personaggio e scambio, arma in mano e vita massima nel dungeon",
+              "status": "done"
+            }
+          ]
+        },
+        {
+          "title": "Tests",
+          "steps": [
+            "Avvio: bun run infra:up, bun run db:migrate (applica 0004_mine), poi bun run dev:all con FISHING_FAST=1 e MINING_FAST=1 in .env",
+            "Dati di prova: dopo il primo login come Fabbro1, nel container postgres: insert into player_item (user_id,item_id,quantity) select id, unnest(array['stone','bug_fang','bug_hide','copper_ore','dungeon_ticket']), unnest(array[30,6,10,20,2]) from \"user\" where email='fabbro1@dev.local'",
+            "Forgia Clava di pietra e Cotta di rame, poi C: indossale; il riquadro Nel dungeon mostra 14-20 danni, 125 HP, -10% danni",
+            "Entra nel dungeon: l'ingresso mostra arma e armatura; durante la run il personaggio ha la clava in mano, la corazza addosso e la vita parte da 125",
+            "Scambia la clava a un altro giocatore: a te si toglie dalla finestra del personaggio",
+            "bun packages/shared/scripts/dungeon-balance.ts: ogni livello rende di più del precedente e nessuno ripulisce tutte le 20 ondate con 10 zuppe",
+            "Pulizia: delete from \"user\" where email in ('fabbro1@dev.local','minatore1@dev.local','minatore2@dev.local')"
+          ]
+        },
+        {
+          "title": "Fix",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": "t4-canne-picconi",
+      "title": "T4 — Canne da pesca e picconi craftabili, nuova icona del crafting",
+      "description": "Sei canne e sei picconi dal crafting: in mano fanno aspettare di meno e trovare più spesso le cose rare. Il pulsante del crafting passa dalla pentola a un'incudine col martello.",
+      "status": "in_progress",
+      "steps": [
+        {
+          "title": "Requirements",
+          "steps": [
+            "Icona del crafting generica (incudine e martello), non più la pentola",
+            "6 canne e 6 picconi, banchi Canne e Picconi nel crafting",
+            "Si prendono in mano dalla finestra del personaggio (uno per tipo); si scambiano, non si vendono",
+            "Ogni livello: −5% di attesa in più (fino a −30%) e più fortuna (canne: pesci speciali; picconi: minerali e gemme non comuni e rari)",
+            "A pari livello canna e piccone rendono più o meno uguale (fino a ~+60% di monete all'ora)",
+            "Tutti vedono la canna o il piccone in mano"
+          ]
+        },
+        {
+          "title": "Edits",
+          "steps": [
+            {
+              "title": "packages/shared: RODS, PICKAXES, TOOLS e tool() nel catalogo, categorie rod/pickaxe; rollMineral con luck; mine-balance.ts per livello",
+              "status": "done"
+            },
+            {
+              "title": "apps/api: colonne rod e pickaxe in player_equipment (migrazione 0005_tools), equip e inventario",
+              "status": "done"
+            },
+            {
+              "title": "apps/game: loadTool, biteDelay/rollCatch e stoneDelay/findDelay con speed e luck, tool nello stato di sedie e filoni, riletto a ogni cambio di equipaggiamento o scambio; l'ultima copia scambiata si toglie di mano",
+              "status": "done"
+            },
+            {
+              "title": "Frontend: CraftingButton (incudine), CraftingWindow, CharacterWindow, InventoryWindow, TradeWindow, GearIcon e tools.js, canna e piccone colorati in Angler e Miner",
+              "status": "done"
+            },
+            {
+              "title": "README e changelog",
+              "status": "done"
+            }
+          ]
+        },
+        {
+          "title": "Tests",
+          "steps": [
+            "Avvio: bun run infra:up, bun run db:migrate (applica 0005_tools), poi bun run dev:all con FISHING_FAST=1 e MINING_FAST=1 in .env",
+            "In alto a destra il pulsante del crafting è un'incudine col martello; clic o tasto R apre il crafting",
+            "Il crafting ha cinque schede: Cucina, Armi, Armature, Canne, Picconi; ogni canna e piccone mostra −% attesa e +% rari",
+            "Con 20 pietre forgia il Piccone di pietra, poi Prendi in mano: il confronto dice −5% di attesa e +10% di rari rispetto al piccone di sempre",
+            "Tasto C: slot Canna da pesca e Piccone, riquadro Al lago e in miniera coi bonus, sezione Canne e picconi nel guardaroba",
+            "In miniera scava: il piccone in mano ha i colori di quello forgiato, e lo vede anche un secondo giocatore",
+            "Cambia piccone mentre scavi: il nuovo si vede subito e conta dalla prossima attesa",
+            "Al lago con una canna in mano: colori della canna sulla sedia, attese più corte",
+            "Scambia l'ultima copia della canna in mano: a te si toglie dalla finestra del personaggio",
+            "bun packages/shared/scripts/mine-balance.ts: a ogni livello pesca e miniera crescono più o meno uguali"
+          ]
+        },
+        {
+          "title": "Fix",
+          "steps": []
+        }
+      ]
+    }
+  ]
+}

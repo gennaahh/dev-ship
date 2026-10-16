@@ -83,9 +83,9 @@ const online = computed(() => lake?.status.value === 'online')
 const me = reactive({ x: LAKE.cx, y: 920, tx: LAKE.cx, ty: 800, dir: 1, walking: false })
 const DEMO_WAIT = [12, 30] // secondi
 const crew = [
-  { seat: 1, name: 'Cuoca Hotfix', look: { color: '#ba68c8', hat: 'chef' } },
+  { seat: 1, name: 'Cuoca Hotfix', look: { color: '#ba68c8', hat: 'chef' }, tool: 'silver_rod' },
   { seat: 4, name: 'Nostromo Deploy', look: { color: '#9ccc65', hat: 'cap' } },
-  { seat: 8, name: 'Capitan Merge', look: { color: '#ff7a59', hat: 'pirate' } },
+  { seat: 8, name: 'Capitan Merge', look: { color: '#ff7a59', hat: 'pirate' }, tool: 'golden_rod' },
 ].map((c, i) => reactive({ ...c, phase: 'waiting', weight: 0, bottle: false, me: false, next: Date.now() / 1000 + 3 + i * 5 }))
 
 function demoStep(c, now) {

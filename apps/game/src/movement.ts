@@ -39,12 +39,15 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 export const PLAZA_WALK = { minX: 40, maxX: 1560, minY: 500, maxY: 860 }
 const PLAZA_SPEED = 280
 
-export function clampToPlaza(p: { x: number; y: number }) {
+// Il punto più vicino dentro un rettangolo in cui si cammina.
+export function clampToBox(p: { x: number; y: number }, box: { minX: number; maxX: number; minY: number; maxY: number }) {
   return {
-    x: clamp(p.x, PLAZA_WALK.minX, PLAZA_WALK.maxX),
-    y: clamp(p.y, PLAZA_WALK.minY, PLAZA_WALK.maxY),
+    x: clamp(p.x, box.minX, box.maxX),
+    y: clamp(p.y, box.minY, box.maxY),
   }
 }
+
+export const clampToPlaza = (p: { x: number; y: number }) => clampToBox(p, PLAZA_WALK)
 
 export function walkToward(pos: { x: number; y: number }, target: { x: number; y: number }, dtMs: number, speed = PLAZA_SPEED) {
   const dx = target.x - pos.x

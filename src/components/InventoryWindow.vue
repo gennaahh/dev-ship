@@ -2,21 +2,24 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { FISH_SOUP, RARITY_NAMES, recipe, SPECIAL_KG, SPECIAL_MULTIPLIER } from '@dev-city/shared/catalog'
 import { SOUP_BELOW } from '@dev-city/shared/dungeon'
+import ItemIcon from './ItemIcon.vue'
 import MaterialIcon from '../city/dungeon/MaterialIcon.vue'
 import TicketBottle from '../city/dungeon/TicketBottle.vue'
 import Fish from '../city/fishing/Fish.vue'
 import { formatKg } from '../city/fishing/lake.js'
+import { toolStat } from '../city/mine/tools.js'
 import { useInventory } from '../composables/useInventory.js'
 import SoupBowl from './SoupBowl.vue'
 
 // L'inventario del giocatore: le monete d'oro, i pesci presi, da vendere, quello che serve per il
-// dungeon (zuppe dal crafting, tasto R, e ticket dalla pesca) e i materiali portati via dal
-// dungeon. Si apre dallo zainetto in alto a destra o col tasto I. Cappelli e colori si
-// indossano dalla finestra del personaggio (tasto C).
+// dungeon (zuppe dal crafting, tasto R, e ticket dalla pesca), i materiali portati via dal
+// dungeon, quello che si trova in miniera (da vendere o per la forgia) e le armi e armature
+// forgiate. Si apre dallo zainetto in alto a destra o col tasto I. Cappelli, colori, armi e
+// armature si indossano dalla finestra del personaggio (tasto C).
 const emit = defineEmits(['close'])
 
 const inventory = useInventory()
-const { fish, soups, tickets, materials, gold, busy, error } = inventory
+const { fish, soups, tickets, materials, minerals, weapons, armors, rods, pickaxes, equipment, gold, busy, error } = inventory
 const soup = recipe(FISH_SOUP)
 
 // "Vendi tutti" chiede conferma: un secondo clic entro qualche secondo.
@@ -33,12 +36,40 @@ function sellAll() {
   confirming.value = false
   inventory.sell(fish.value.map((f) => f.id))
 }
+// La miniera: si vende un pezzo, tutti quelli di un tipo o tutto, anche qui con conferma.
+const minedTotal = computed(() => minerals.value.reduce((sum, m) => sum + m.price * m.quantity, 0))
+const mined = computed(() => minerals.value.filter((m) => m.quantity > 0))
+const confirmingMined = ref(false)
+let minedTimer = 0
+function sellAllMined() {
+  if (!confirmingMined.value) {
+    confirmingMined.value = true
+    minedTimer = setTimeout(() => (confirmingMined.value = false), 3000)
+    return
+  }
+  clearTimeout(minedTimer)
+  confirmingMined.value = false
+  inventory.sellItems(Object.fromEntries(mined.value.map((m) => [m.id, m.quantity])))
+}
+
+// Armi, armature, canne e picconi forgiati, con le loro statistiche e se li si ha addosso.
+const gear = computed(() => [...weapons.value, ...armors.value, ...rods.value, ...pickaxes.value])
+function gearStat(g) {
+  if (g.slot === 'weapon') return `⚔ ${g.damage[0]}–${g.damage[1]} danni`
+  if (g.slot === 'armor') return `❤ +${g.hp} HP · 🛡 −${Math.round(g.defense * 100)}%`
+  return toolStat(g)
+}
+const WORN = { weapon: 'Impugnata', armor: 'Indossata', rod: 'In mano', pickaxe: 'In mano' }
+
 // Più grossi i pesci più pesanti, senza uscire dalla carta.
 const fishScale = (kg) => 0.7 + Math.min(kg, 20) / 80
 
 const dialog = ref(null)
 onMounted(() => dialog.value.showModal())
-onUnmounted(() => clearTimeout(confirmTimer))
+onUnmounted(() => {
+  clearTimeout(confirmTimer)
+  clearTimeout(minedTimer)
+})
 // Esc chiude l'inventario e basta: preventDefault dice all'interno di non usarlo per uscire.
 function onKeydown(e) {
   if (e.key !== 'Escape') return
@@ -112,10 +143,47 @@ function onKeydown(e) {
             <span class="weight">× {{ m.quantity }}</span>
           </li>
         </ul>
-        <p class="empty">Li lasciano i mostri del dungeon: serviranno per armi e armature.</p>
+        <p class="empty">Li lasciano i mostri del dungeon: alla forgia del crafting <kbd>R</kbd>, coi minerali della miniera, diventano armi e armature.</p>
       </section>
 
-      <p class="hint">Cappelli e colori si indossano dalla finestra del personaggio <kbd>C</kbd></p>
+      <section>
+        <div class="section-head">
+          <h3>Miniera</h3>
+          <button v-if="mined.length" class="small sell-all" :class="{ confirming: confirmingMined }" :disabled="busy" @click="sellAllMined">
+            {{ confirmingMined ? 'Sicuro?' : 'Vendi tutto' }} · 🪙 {{ minedTotal }}
+          </button>
+        </div>
+        <ul class="grid materials">
+          <li v-for="m in minerals" :key="m.id" class="card material" :class="[m.rarity, { none: !m.quantity }]" :title="`${RARITY_NAMES[m.rarity]} · 🪙 ${m.price} l'uno`">
+            <ItemIcon :id="m.id" />
+            <span class="item-name">{{ m.name }}</span>
+            <span class="weight">× {{ m.quantity }} · 🪙 {{ m.price }}</span>
+            <span v-if="m.quantity" class="sell-row">
+              <button class="small sell" :disabled="busy" :title="`Vendi 1 × ${m.name} per ${m.price} monete`" @click="inventory.sellItems({ [m.id]: 1 })">Vendi 1</button>
+              <button v-if="m.quantity > 1" class="small sell" :disabled="busy" :title="`Vendi tutti per ${m.price * m.quantity} monete`" @click="inventory.sellItems({ [m.id]: m.quantity })">Tutti · 🪙 {{ m.price * m.quantity }}</button>
+            </span>
+          </li>
+        </ul>
+        <p class="empty">Pietre, minerali e gemme si trovano scavando in miniera: si vendono o vanno alla forgia per armi e armature.</p>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h3>Armi, armature e attrezzi <span class="count">{{ gear.length }}</span></h3>
+          <button v-if="gear.length" class="small wear" @click="inventory.open.value = 'character'">Indossa · C</button>
+        </div>
+        <p v-if="!gear.length" class="empty">Niente: si forgiano col crafting <kbd>R</kbd>, con i minerali della miniera e i materiali del dungeon. Armi e armature contano nel dungeon, canne e picconi al lago e in miniera.</p>
+        <ul v-else class="grid">
+          <li v-for="g in gear" :key="g.id" class="card" :class="{ worn: equipment[g.slot] === g.id }">
+            <ItemIcon :id="g.id" />
+            <span class="item-name">{{ g.name }}</span>
+            <span class="weight">{{ gearStat(g) }}<template v-if="g.quantity > 1"> · × {{ g.quantity }}</template></span>
+            <span v-if="equipment[g.slot] === g.id" class="tag">{{ WORN[g.slot] }} ✓</span>
+          </li>
+        </ul>
+      </section>
+
+      <p class="hint">Cappelli, colori, armi, armature, canne e picconi si indossano dalla finestra del personaggio <kbd>C</kbd></p>
     </div>
   </dialog>
 </template>
@@ -330,6 +398,23 @@ h3 {
 }
 .material.rare {
   background: #f1dcff;
+}
+.sell-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+.sell-row .sell {
+  padding: 1px 7px 3px;
+  font-size: 13px;
+}
+.wear {
+  background: #b9a4f5;
+}
+.card.worn {
+  border-color: #6b4bd8;
+  background: #e6defc;
 }
 .sell {
   margin-top: 4px;

@@ -15,20 +15,21 @@ const DEAD_MS = 600
 // c'è tutto quello che serve a disegnarla; swing, hurt e drink contano i colpi dati, presi e
 // le zuppe bevute, per far ripartire le animazioni (si usano come :key).
 export function useRunPlayback() {
-  const state = reactive(fresh(0))
+  const state = reactive(fresh(0, PLAYER_HP))
   let events = []
   let raf = 0
   let last = 0
   let floatId = 0
 
-  function fresh(soups) {
-    return { playing: false, done: false, cleared: false, t: 0, wave: 0, hp: PLAYER_HP, soups, gold: 0, materials: {}, monsters: [], floats: [], swing: 0, hurt: 0, drink: 0 }
+  // maxHp: la vita con cui si parte, di più con l'armatura (la dice la run).
+  function fresh(soups, maxHp) {
+    return { playing: false, done: false, cleared: false, t: 0, wave: 0, hp: maxHp, maxHp, soups, gold: 0, materials: {}, monsters: [], floats: [], swing: 0, hurt: 0, drink: 0 }
   }
 
   // Le zuppe all'ingresso: la run dice solo quante ne restano dopo ogni sorso.
   function start(run, soups) {
     cancelAnimationFrame(raf)
-    Object.assign(state, fresh(soups), { playing: true })
+    Object.assign(state, fresh(soups, run.maxHp ?? PLAYER_HP), { playing: true })
     events = run.events
     last = performance.now()
     raf = requestAnimationFrame(frame)
