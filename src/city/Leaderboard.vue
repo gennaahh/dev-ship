@@ -1,36 +1,45 @@
 <script setup>
-// Classifica dimostrativa: i dati sono finti, servono solo a mostrare come apparirà sul cartellone.
-const PLAYERS = [
-  { name: 'Capitan Merge', color: '#ff7a59', gems: 42, bugs: 17, fish: 8, points: 1280 },
-  { name: 'Mozzo Refactor', color: '#4fc3f7', gems: 35, bugs: 21, fish: 3, points: 1145 },
-  { name: 'Nostromo Deploy', color: '#9ccc65', gems: 30, bugs: 12, fish: 11, points: 990 },
-  { name: 'Vedetta Debug', color: '#ffca28', gems: 18, bugs: 25, fish: 2, points: 870 },
-  { name: 'Cuoca Hotfix', color: '#ba68c8', gems: 22, bugs: 9, fish: 14, points: 760 },
-  { name: 'Timoniere Review', color: '#4db6ac', gems: 15, bugs: 11, fish: 6, points: 640 },
-  { name: 'Marinaio Commit', color: '#f06292', gems: 12, bugs: 6, fish: 9, points: 515 },
-]
-const podium = [PLAYERS[1], PLAYERS[0], PLAYERS[2]]
-const podiumRank = [2, 1, 3]
-const initials = (name) => name.split(' ').map((w) => w[0]).join('')
+import { computed } from 'vue'
+import { GAMES } from '@dev-city/shared/score'
+import { useLeaderboard } from '../composables/useLeaderboard.js'
+import Avatar from './Avatar.vue'
+import { lookOf } from './avatar.js'
+
+// La classifica della città sul cartellone: i punti di tutti i giochi della settimana (da
+// lunedì), sommati. Sul podio i primi tre col loro look, sotto i primi sette coi punti gioco per
+// gioco. Sono anche quelli che la dev-ship mostra al timone. Senza backend è quella della demo.
+const { board, failed } = useLeaderboard()
+const ROWS = 7
+const players = computed(() => (board.value?.week ?? []).slice(0, ROWS).map((p) => ({ ...p, look: lookOf(p.name, p.look) })))
+// Il podio: secondo, primo, terzo.
+const podium = computed(() => [1, 0, 2].map((i) => players.value[i] && { ...players.value[i], rank: i + 1 }).filter(Boolean))
+const message = computed(() => {
+  if (players.value.length) return ''
+  if (failed.value) return 'Classifica non raggiungibile'
+  if (!board.value) return 'Caricamento…'
+  return 'Ancora nessun punto questa settimana: il timone è libero!'
+})
 </script>
 
 <template>
   <div class="board">
     <header>
       <h2>🏆 Classifica della settimana</h2>
-      <span class="demo">DEMO</span>
+      <span v-if="board?.demo" class="demo">DEMO</span>
+      <span v-else class="sub">tutti i giochi · da lunedì</span>
     </header>
 
-    <div class="body">
+    <p v-if="message" class="empty">{{ message }}</p>
+    <div v-else class="body">
       <div class="podium">
-        <div v-for="(p, i) in podium" :key="p.name" class="step" :class="`rank-${podiumRank[i]}`">
-          <div class="avatar" :style="{ background: p.color }">
-            <span v-if="podiumRank[i] === 1" class="crown">👑</span>
-            {{ initials(p.name) }}
+        <div v-for="p in podium" :key="p.name" class="step" :class="`rank-${p.rank}`">
+          <div class="avatar">
+            <span v-if="p.rank === 1" class="crown">👑</span>
+            <svg viewBox="-62 -140 124 150" aria-hidden="true"><Avatar :look="p.look" /></svg>
           </div>
           <div class="pname">{{ p.name }}</div>
           <div class="block">
-            <span class="num">{{ podiumRank[i] }}</span>
+            <span class="num">{{ p.rank }}</span>
             <span class="pts">{{ p.points }} pt</span>
           </div>
         </div>
@@ -40,20 +49,16 @@ const initials = (name) => name.split(' ').map((w) => w[0]).join('')
         <li class="list-head">
           <span />
           <span />
-          <span>⛏️</span>
-          <span>🐞</span>
-          <span>🐟</span>
+          <span v-for="g in GAMES" :key="g.id" :title="g.name">{{ g.icon }}</span>
           <span>Punti</span>
         </li>
-        <li v-for="(p, i) in PLAYERS" :key="p.name" class="row" :style="{ animationDelay: `${i * 0.08}s` }">
+        <li v-for="(p, i) in players" :key="p.name" class="row" :style="{ animationDelay: `${i * 0.08}s` }">
           <span class="rank">{{ i + 1 }}</span>
           <span class="who">
-            <span class="dot" :style="{ background: p.color }">{{ initials(p.name) }}</span>
+            <span class="dot"><svg viewBox="-44 -112 88 88" aria-hidden="true"><Avatar :look="p.look" /></svg></span>
             {{ p.name }}
           </span>
-          <span>{{ p.gems }}</span>
-          <span>{{ p.bugs }}</span>
-          <span>{{ p.fish }}</span>
+          <span v-for="g in GAMES" :key="g.id" class="game" :class="{ zero: !p.games[g.id] }">{{ p.games[g.id] }}</span>
           <span class="points">{{ p.points }}</span>
         </li>
       </ol>
@@ -119,23 +124,25 @@ h2 {
 }
 .avatar {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 104px;
+  height: 104px;
   display: grid;
-  place-items: center;
-  border: 6px solid #fff8e6;
-  border-radius: 50%;
-  color: #2d2a4a;
-  font-size: 36px;
+  place-items: end center;
+  overflow: visible;
+}
+.avatar svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 .rank-1 .avatar {
-  width: 120px;
-  height: 120px;
-  font-size: 44px;
+  width: 128px;
+  height: 128px;
 }
 .crown {
   position: absolute;
-  top: -50px;
+  z-index: 1;
+  top: -54px;
   font-size: 48px;
   animation: bob 1.6s ease-in-out infinite;
 }
@@ -143,6 +150,8 @@ h2 {
   50% { translate: 0 -8px; rotate: -6deg; }
 }
 .pname {
+  position: relative;
+  margin-top: 8px;
   font-size: 22px;
   text-align: center;
   line-height: 1.1;
@@ -182,7 +191,7 @@ h2 {
 .list-head,
 .row {
   display: grid;
-  grid-template-columns: 48px 1fr 70px 70px 70px 110px;
+  grid-template-columns: 44px 1fr 70px 70px 70px 70px 100px;
   align-items: center;
   text-align: center;
 }
@@ -209,16 +218,41 @@ h2 {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   text-align: left;
 }
 .dot {
-  width: 40px;
-  height: 40px;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+.dot svg {
+  width: 100%;
+  height: 100%;
+}
+.game {
+  font-size: 22px;
+}
+.game.zero {
+  opacity: 0.35;
+}
+.sub {
+  font-size: 26px;
+  opacity: 0.7;
+}
+.empty {
+  flex: 1;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  color: #2d2a4a;
-  font-size: 18px;
+  margin: 0;
+  font-size: 38px;
+  opacity: 0.85;
+  text-align: center;
 }
 .points {
   color: #ffd54a;

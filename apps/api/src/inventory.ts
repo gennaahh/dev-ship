@@ -1,9 +1,10 @@
 import { DUNGEON_TICKET, FISH, FISH_SOUP, fishPrice, gear, itemName, recipe, sellPrice, shopItem, type GearSlot, type Slot } from '@dev-city/shared/catalog'
 import { coffee } from '@dev-city/shared/coffee'
 import { simulateRun } from '@dev-city/shared/dungeon'
+import { dungeonPoints } from '@dev-city/shared/score'
 import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { db } from './db/index.ts'
-import { goldLedger, playerCoffee, playerEquipment, playerItem, user } from './db/schema.ts'
+import { goldLedger, playerCoffee, playerEquipment, playerItem, playerScore, user } from './db/schema.ts'
 
 // Inventario, monete d'oro ed equipaggiamento dei giocatori. Ogni operazione restituisce
 // l'inventario aggiornato, così lo schermo si ridisegna con una risposta sola.
@@ -198,7 +199,7 @@ export async function craft(userId: string, recipeId: string) {
 
 // Una run nel dungeon: usa un ticket, la simula tutta qui (packages/shared/src/dungeon.ts) con
 // l'arma e l'armatura indossate (e il caffè al ginseng, se lo si è bevuto) e salva subito cosa
-// ne esce: zuppe bevute, monete e materiali.
+// ne esce: zuppe bevute, monete, materiali e i punti della classifica.
 // Il giocatore poi la guarda (run.events), ma l'esito è già deciso e nell'inventario.
 export async function runDungeon(userId: string) {
   const run = await db.transaction(async (tx) => {
@@ -219,6 +220,9 @@ export async function runDungeon(userId: string) {
     await addCount(tx, userId, FISH_SOUP, -run.soupsUsed)
     for (const [itemId, n] of Object.entries(run.materials)) await addCount(tx, userId, itemId, n)
     if (run.gold > 0) await tx.insert(goldLedger).values({ userId, amount: run.gold, reason: 'dungeon', itemId: DUNGEON_TICKET })
+    // I punti della classifica della città: per le ondate superate e i boss sconfitti.
+    const points = dungeonPoints(run)
+    if (points > 0) await tx.insert(playerScore).values({ userId, game: 'dungeon', points })
     return run
   })
   return { run, inventory: await inventoryOf(userId) }

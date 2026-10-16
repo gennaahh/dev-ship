@@ -57,6 +57,13 @@
       "when": 1792176272394,
       "tag": "0007_coffee",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792178634316,
+      "tag": "0008_score",
+      "breakpoints": true
     }
   ]
 }

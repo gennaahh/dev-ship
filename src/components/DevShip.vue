@@ -11,6 +11,7 @@ import Plane from './Plane.vue'
 import Poseidon from './Poseidon.vue'
 import Sharks from './Sharks.vue'
 import Weather from './Weather.vue'
+import HelmScene from './HelmScene.vue'
 import LunchScene from './LunchScene.vue'
 import PortScene from './PortScene.vue'
 import RestScene from './RestScene.vue'
@@ -19,12 +20,16 @@ import { isLunchTime, isRestTime, minutesSinceMonday, shipPosition } from '../sh
 import { isKrakenTime, isPlaneTime, isPoseidonTime, isPterodactylTime } from '../monsters.js'
 import { weatherAt } from '../weather.js'
 import { weekId } from '../weekRandom.js'
+import { lookOf } from '../city/avatar.js'
+import { useLeaderboard } from '../composables/useLeaderboard.js'
 
 // La dev-ship riempie il contenitore in cui è montata (le misure sono in unità cqw/cqh).
 // controls: mostra il pannello con l'orario e lo slider per simulare la settimana.
 defineProps({ controls: { type: Boolean, default: true } })
 
 const liveMinutes = ref(minutesSinceMonday(new Date()))
+// I secondi del giorno, per il giro del timone: uguale su tutti gli schermi.
+const clockSeconds = ref(Math.floor(Date.now() / 1000))
 const liveWeek = ref(weekId(new Date()))
 
 // Orario simulato con lo slider (null = tempo reale).
@@ -49,14 +54,15 @@ onMounted(() => {
     const now = new Date()
     liveMinutes.value = minutesSinceMonday(now)
     liveWeek.value = weekId(now)
+    clockSeconds.value = Math.floor(now.getTime() / 1000)
   }, 1000)
 })
 onUnmounted(() => clearInterval(timer))
 
 const position = computed(() => shipPosition(minutes.value))
-// Scena ravvicinata, in ordine di precedenza: pranzo a bordo, lavori in porto quando la nave
-// è ormeggiata, riposo dell'equipaggio la sera e la notte in navigazione.
-const scene = computed(() => {
+// Scena ravvicinata dell'orario, in ordine di precedenza: pranzo a bordo, lavori in porto quando
+// la nave è ormeggiata, riposo dell'equipaggio la sera e la notte in navigazione.
+const timeScene = computed(() => {
   if (isLunchTime(minutes.value)) return 'lunch'
   if (position.value.direction === 'docked') return 'port'
   if (isRestTime(minutes.value)) return 'rest'
@@ -65,14 +71,31 @@ const scene = computed(() => {
 
 // Mostri: solo nella vista del mare aperto, mai durante le scene ravvicinate.
 const monsters = computed(() => ({
-  kraken: !scene.value && isKrakenTime(minutes.value),
-  pterodactyl: !scene.value && isPterodactylTime(minutes.value, week.value),
-  poseidon: !scene.value && isPoseidonTime(minutes.value),
-  plane: !scene.value && isPlaneTime(minutes.value),
+  kraken: !timeScene.value && isKrakenTime(minutes.value),
+  pterodactyl: !timeScene.value && isPterodactylTime(minutes.value, week.value),
+  poseidon: !timeScene.value && isPoseidonTime(minutes.value),
+  plane: !timeScene.value && isPlaneTime(minutes.value),
 }))
 
 // Maltempo: anche questo solo nella vista del mare aperto.
-const weather = computed(() => (scene.value ? null : weatherAt(minutes.value, week.value)))
+const weather = computed(() => (timeScene.value ? null : weatherAt(minutes.value, week.value)))
+
+// Il timone: mentre la nave naviga, ogni HELM_EVERY secondi ci si avvicina per HELM_FOR secondi
+// e al timone ci sono i primi tre della classifica della settimana. Mai sopra a mostri e
+// maltempo, che passano di rado, né senza nessuno in classifica.
+const HELM_EVERY = 60
+const HELM_FOR = 15
+const { board } = useLeaderboard()
+const helmCrew = computed(() => (board.value?.week ?? []).slice(0, 3).map((p) => ({ ...p, look: lookOf(p.name, p.look) })))
+const helm = computed(
+  () =>
+    !timeScene.value &&
+    !weather.value &&
+    !Object.values(monsters.value).some(Boolean) &&
+    helmCrew.value.length > 0 &&
+    clockSeconds.value % HELM_EVERY < HELM_FOR,
+)
+const scene = computed(() => timeScene.value ?? (helm.value ? 'helm' : null))
 
 // La nave va dalla banchina del porto (progress 0) fino a fianco della boa (progress 1).
 const shipLeft = computed(
@@ -82,7 +105,7 @@ const shipStyle = computed(() => ({ left: `calc${shipLeft.value}` }))
 // Poseidone sta attaccato alla poppa (la nave rientra verso sinistra), un po' nascosto dietro lo scafo.
 const poseidonStyle = computed(() => ({ left: `calc(${shipLeft.value} + var(--ship-w) * 0.72)` }))
 
-// Lo zoom delle scene (pranzo, porto, riposo) punta al ponte della nave: la nave poggia all'85%
+// Lo zoom delle scene (pranzo, porto, riposo, timone) punta al ponte della nave: la nave poggia all'85%
 // dell'altezza (30% del mare, che è la metà bassa) ed è alta circa 0.68 × larghezza.
 const worldStyle = computed(() => ({
   transformOrigin: `calc(${shipLeft.value} + var(--ship-w) / 2) calc(85% - var(--ship-w) * 0.36)`,
@@ -97,6 +120,7 @@ const sceneStatus = {
   lunch: 'Pausa pranzo a bordo',
   port: 'In porto: carico merci e riparazioni',
   rest: 'Fine turno: l\'equipaggio riposa',
+  helm: 'Al timone i primi 3 della settimana',
 }
 const weatherStatus = {
   storm: 'Tempesta in mare!',
@@ -154,6 +178,7 @@ const statusText = computed(() => {
       <LunchScene v-if="scene === 'lunch'" />
       <PortScene v-else-if="scene === 'port'" />
       <RestScene v-else-if="scene === 'rest'" />
+      <HelmScene v-else-if="scene === 'helm'" :crew="helmCrew" />
     </Transition>
 
     <Transition name="controls">
@@ -237,7 +262,7 @@ const statusText = computed(() => {
   opacity: 0;
 }
 
-/* Pausa pranzo, lavori in porto e riposo: zoom sulla nave, poi compare la scena.
+/* Pausa pranzo, lavori in porto, riposo e timone: zoom sulla nave, poi compare la scena.
    All'uscita la scena sfuma e solo dopo parte lo zoom out. */
 .world {
   position: absolute;

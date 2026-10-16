@@ -1,7 +1,19 @@
 import { sql } from 'drizzle-orm'
 import type { Difficulty, Reward } from '@dev-city/shared/office'
-import { index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import type { Game } from '@dev-city/shared/score'
+import { customType, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { user } from './auth-schema.ts'
+
+// Una colonna jsonb. Quella di drizzle trasforma l'oggetto in testo, e col driver bun-sql il testo
+// viene trasformato in JSON un'altra volta: Postgres lo tiene come stringa (non si interroga con
+// ->>). Qui l'oggetto passa così com'è e lo codifica Bun. In lettura si accettano anche le
+// stringhe, per sicurezza.
+const jsonb = <T>() =>
+  customType<{ data: T; driverData: unknown }>({
+    dataType: () => 'jsonb',
+    toDriver: (value) => value,
+    fromDriver: (value) => (typeof value === 'string' ? JSON.parse(value) : value) as T,
+  })()
 
 // Tutte le tabelle dell'API. Le tabelle dei giocatori (users, sessions, ...) le genera
 // Better Auth: bun run --filter @dev-city/api auth:schema.
@@ -116,8 +128,8 @@ export const officeMission = pgTable(
     difficulty: text().$type<Difficulty>().notNull(),
     requester: text().notNull(),
     title: text().notNull(),
-    needs: jsonb().$type<Record<string, number>>().notNull(),
-    reward: jsonb().$type<Reward>().notNull(),
+    needs: jsonb<Record<string, number>>().notNull(),
+    reward: jsonb<Reward>().notNull(),
     status: text().$type<'open' | 'taken' | 'done' | 'cancelled'>().notNull().default('open'),
     takenBy: text().references(() => user.id, { onDelete: 'cascade' }),
     takenAt: timestamp({ withTimezone: true }),
@@ -144,3 +156,21 @@ export const playerCoffee = pgTable('player_coffee', {
   coffeeId: text().notNull(),
   until: timestamp({ withTimezone: true }).notNull(),
 })
+
+// I punti della classifica della città (packages/shared/src/score.ts): una riga ogni volta che si
+// fa punti, in qualsiasi gioco. game: 'fishing' e 'mining' (le scrive il game server, con la
+// cattura e la scoperta), 'dungeon' e 'mission' (le scrive l'API, con la run e la consegna). Le
+// classifiche della settimana e di sempre sono le somme (leaderboard.ts).
+export const playerScore = pgTable(
+  'player_score',
+  {
+    id: serial().primaryKey(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    game: text().$type<Game>().notNull(),
+    points: integer().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('player_score_created_at_idx').on(table.createdAt), index('player_score_user_id_idx').on(table.userId)],
+)

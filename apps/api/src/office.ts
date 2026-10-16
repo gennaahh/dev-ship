@@ -1,9 +1,10 @@
 import { FISH, itemName } from '@dev-city/shared/catalog'
 import { coffee } from '@dev-city/shared/coffee'
 import { BOARD, CANCEL_COOLDOWN_MS, generateMission } from '@dev-city/shared/office'
+import { missionPoints } from '@dev-city/shared/score'
 import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { db } from './db/index.ts'
-import { goldLedger, officeMission, playerCoffee, playerItem, user } from './db/schema.ts'
+import { goldLedger, officeMission, playerCoffee, playerItem, playerScore, user } from './db/schema.ts'
 import { addCount, countOf, goldOf, InventoryError, inventoryOf, type Tx } from './inventory.ts'
 
 // L'ufficio: la macchinetta del caffè (in fondo) e la bacheca delle missioni.
@@ -125,7 +126,7 @@ export async function cancelMission(userId: string) {
   return withBoard(userId)
 }
 
-// Consegna quello che chiede la missione e riscuote il premio. Se servono pesci si danno i più
+// Consegna quello che chiede la missione e riscuote il premio, coi punti della classifica. Se servono pesci si danno i più
 // leggeri, come in cucina.
 export async function completeMission(userId: string) {
   await db.transaction(async (tx) => {
@@ -155,6 +156,7 @@ export async function completeMission(userId: string) {
     for (const [id, n] of Object.entries(needs)) await addCount(tx, userId, id, -n)
     for (const [id, n] of Object.entries(current.reward.items)) await addCount(tx, userId, id, n)
     if (current.reward.gold > 0) await tx.insert(goldLedger).values({ userId, amount: current.reward.gold, reason: 'mission', itemId: 'mission' })
+    await tx.insert(playerScore).values({ userId, game: 'mission', points: missionPoints(current.reward) })
     await tx.update(officeMission).set({ status: 'done', finishedAt: sql`now()` }).where(eq(officeMission.id, current.id))
   })
   return withBoard(userId)

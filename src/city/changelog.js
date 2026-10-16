@@ -8,6 +8,10 @@ export const CHANGELOG = [
   {
     date: '2026-10-16',
     items: [
+      { tag: 'new', backend: true, text: 'La classifica del cartellone è vera! Somma i punti di tutti i giochi della settimana (da lunedì): la pesca 10 punti per chilo, la miniera 5 per ogni moneta di quello che si stacca (anche le pietre), il dungeon 10 per ondata superata e 40 per ogni boss, le missioni dell\'ufficio 2 per moneta del premio. Un\'ora al lago o in miniera vale più o meno uguale. I punti fatti finora con pesci, scoperte e missioni ci sono già.' },
+      { tag: 'new', backend: true, text: 'Sul podio del cartellone ci sono i personaggi col loro look, e nella lista i punti gioco per gioco.' },
+      { tag: 'new', backend: true, text: 'I primi tre della settimana sono al timone della dev-ship: mentre la nave naviga, ogni minuto si zooma sul ponte per 15 secondi, col primo alla ruota e gli altri due ai lati.' },
+      { tag: 'new', text: 'Al timone della dev-ship c\'è chi è in testa alla classifica (nella demo la squadra finta).' },
       { tag: 'new', backend: true, text: 'L\'ufficio è rifatto: si entra, si cammina e si chiacchiera come in piazza, e in mezzo c\'è il tavolo delle riunioni con 8 posti. Clic su una sedia libera per sedersi, uno a testa. La bacheca delle missioni ora è appesa in fondo a sinistra: un clic e ci si avvicina per leggerla.' },
       { tag: 'new', backend: true, text: 'In fondo a destra, su un tavolino, la macchinetta del caffè, con 6 caffè: espresso (6 monete, 1 ora, −10% di attesa al lago e in miniera), americano (12, 4 ore, −5%), cappuccino (6, 1 ora, +40% pesci speciali e scoperte rare), marocchino (12, 1 ora, tutti e due), ginseng (20, per la prossima run nel dungeon: +3 danni a colpo e +20 HP, e il menu fa vedere cosa cambia con la propria arma) e deca (1 moneta, non fa niente ma fa compagnia). Un caffè alla volta, e si somma a canne e picconi.' },
       { tag: 'new', backend: true, text: 'Chi ha un caffè in circolo ha la tazzina sul proprio personaggio in alto a destra e, seduto al tavolo dell\'ufficio, la tazza fumante davanti.' },

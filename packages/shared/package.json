@@ -8,6 +8,7 @@
     "./dungeon": "./src/dungeon.ts",
     "./mine": "./src/mine.ts",
     "./office": "./src/office.ts",
-    "./office-floor": "./src/office-floor.ts"
+    "./office-floor": "./src/office-floor.ts",
+    "./score": "./src/score.ts"
   }
 }
