@@ -5,6 +5,7 @@ import MissionItems from '../city/office/MissionItems.vue'
 import MissionReward from '../city/office/MissionReward.vue'
 import { minutesLeft, needName, NOTE_COLORS, source } from '../city/office/office.js'
 import { useOffice } from '../composables/useOffice.js'
+import Icon from './Icon.vue'
 
 // La propria missione dell'ufficio: cosa chiede (quanti se ne hanno su quanti ne servono), il
 // premio e i pulsanti per consegnarla o annullarla. Annullare chiede conferma, perché poi per
@@ -66,7 +67,7 @@ function onKeydown(e) {
     <header>
       <h2 id="mission-title">{{ done ? 'Missione completata!' : 'La tua missione' }}</h2>
       <kbd title="Si apre e chiude anche col tasto M">M</kbd>
-      <button class="x" aria-label="Chiudi la finestra della missione" @click="emit('close')">✕</button>
+      <button class="x" aria-label="Chiudi la finestra della missione" @click="emit('close')"><Icon name="close" /></button>
     </header>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -127,6 +128,9 @@ function onKeydown(e) {
 
 <style scoped>
 .mission {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #8fb3ea;
+  --scroll-track: #e3ebf7;
   width: min(520px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   box-sizing: border-box;

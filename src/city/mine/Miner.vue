@@ -5,6 +5,7 @@ import Avatar from '../Avatar.vue'
 import MineralIcon from './MineralIcon.vue'
 import { pickaxeLook } from './tools.js'
 import { flecksFor, GLOW, SCALE } from './mine.js'
+import Icon from '../../components/Icon.vue'
 
 // Un filone della miniera, da mettere dentro l'<svg> della galleria, in due strati: layer 'wall'
 // è la roccia alla base della parete (da libero col cartellino che invita a scavare), da
@@ -126,13 +127,17 @@ function dig(e) {
       <g class="label">
         <text v-if="big" class="wow" y="-158" text-anchor="middle">{{ found.id === 'diamond' ? 'LEGGENDARIO!' : 'CHE COLPO!' }}</text>
         <text class="what" y="-126" text-anchor="middle">{{ found.name }}</text>
-        <text class="worth" y="-102" text-anchor="middle">+{{ found.price }} 🪙</text>
+        <text class="worth" x="-2" y="-102" text-anchor="end">+{{ found.price }}</text>
+        <Icon name="coin" :x="1" :y="-119" :size="20" />
       </g>
     </g>
 
     <!-- Il nome e quanto si è scavato, alla misura della scena -->
     <text class="name" :class="{ me: miner.me }" :x="spot.x" :y="spot.y + 17" text-anchor="middle">{{ miner.name }}</text>
-    <text class="count" :x="spot.x" :y="spot.y + 33" text-anchor="middle">🪨 {{ miner.stones }} · 💎 {{ miner.finds }}</text>
+    <Icon name="rock" :x="spot.x - 40" :y="spot.y + 21" :size="15" />
+    <text class="count" :x="spot.x - 23" :y="spot.y + 33">{{ miner.stones }}</text>
+    <Icon name="gem" :x="spot.x + 4" :y="spot.y + 21" :size="15" />
+    <text class="count" :x="spot.x + 21" :y="spot.y + 33">{{ miner.finds }}</text>
   </g>
 </template>
 

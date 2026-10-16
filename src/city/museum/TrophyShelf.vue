@@ -1,6 +1,7 @@
 <script setup>
 import { TROPHIES } from '@dev-city/shared/trophies'
 import { weekLabel } from './museum.js'
+import Icon from '../../components/Icon.vue'
 
 // La bacheca dei trofei vista da vicino, sopra la scena del museo: i trofei della città
 // (packages/shared/src/trophies.ts), con chi li ha vinti e quando. Per ora è vuota: arriveranno
@@ -11,12 +12,12 @@ const emit = defineEmits(['close'])
 <template>
   <section class="shelf" aria-labelledby="shelf-title" @click.stop>
     <header>
-      <button class="close" aria-label="Allontanati dalla bacheca" @click="emit('close')">← Torna alla sala</button>
+      <button class="close" aria-label="Allontanati dalla bacheca" @click="emit('close')"><Icon name="arrow-left" /> Torna alla sala</button>
       <h2 id="shelf-title">Bacheca dei trofei</h2>
     </header>
     <ul v-if="TROPHIES.length" class="trophies">
       <li v-for="t in TROPHIES" :key="t.id" class="trophy">
-        <span class="cup" aria-hidden="true">🏆</span>
+        <Icon class="cup" name="trophy" />
         <h3>{{ t.name }}</h3>
         <p>{{ t.blurb }}</p>
         <small>{{ t.winner }} · {{ weekLabel(t.date) }}</small>
@@ -33,6 +34,9 @@ const emit = defineEmits(['close'])
 
 <style scoped>
 .shelf {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #c98a4b;
+  --scroll-track: #cfe6f2;
   position: absolute;
   top: 84px;
   left: 50%;

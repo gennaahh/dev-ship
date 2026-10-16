@@ -7,6 +7,7 @@ import CoffeeCup from '../city/office/CoffeeCup.vue'
 import { activeCoffee, leftText } from '../city/office/coffee.js'
 import { useInventory } from '../composables/useInventory.js'
 import KeyCap from './KeyCap.vue'
+import Icon from './Icon.vue'
 
 // In alto a destra, da loggati: il proprio personaggio, il nome e le monete d'oro, e la tazzina
 // quando si ha un caffè in circolo (bevuto all'ufficio). Un clic (o il tasto C) apre la finestra
@@ -34,7 +35,7 @@ const cup = computed(() => activeCoffee(inventory.coffee.value, now.value))
     </span>
     <span class="info">
       <span class="name">{{ name }}</span>
-      <span class="gold">🪙 {{ inventory.ready.value ? inventory.gold.value : '…' }}</span>
+      <span class="gold"><Icon name="coin" /> {{ inventory.ready.value ? inventory.gold.value : '…' }}</span>
     </span>
     <span v-if="cup" :key="cup.id" class="cup" :title="`${cup.name}: ancora ${leftText(cup.left)}`">
       <svg viewBox="-30 -50 60 54" aria-hidden="true"><CoffeeCup :id="cup.id" :steam="false" /></svg>

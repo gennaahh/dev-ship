@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { colorFor } from '../city/avatar.js'
+import Icon from './Icon.vue'
 
 // Finestrina della chat: in città nell'angolo in alto a sinistra, dentro i luoghi in basso
 // a sinistra (lì in alto c'è il pulsante per tornare in città). Si inizia a
@@ -156,7 +157,7 @@ const time = (at) => new Date(at).toLocaleTimeString('it-IT', { hour: '2-digit',
           @blur="focused = false"
           @keydown.esc="stopTyping"
         />
-        <button type="submit" class="send" :disabled="!online || !draft.trim()" aria-label="Invia" @click.stop>➤</button>
+        <button type="submit" class="send" :disabled="!online || !draft.trim()" aria-label="Invia" @click.stop><Icon name="send" /></button>
       </form>
     </section>
   </Teleport>
@@ -164,6 +165,9 @@ const time = (at) => new Date(at).toLocaleTimeString('it-IT', { hour: '2-digit',
 
 <style scoped>
 .chat {
+  /* Le barre di scorrimento (App.vue) come l'intestazione. */
+  --scroll-thumb: #ffd54a;
+  --scroll-track: rgba(45, 42, 74, 0.08);
   position: fixed;
   left: 16px;
   bottom: 16px;

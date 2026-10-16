@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { VISIBLE_CHANGELOG } from './changelog.js'
+import Icon from '../components/Icon.vue'
 
 const props = defineProps({
   active: { type: Boolean, default: false },
@@ -27,8 +28,8 @@ const formatDate = (iso) =>
 <template>
   <div class="board">
     <header>
-      <h2>📜 Changelog</h2>
-      <span class="hint">da vicino si scorre ↕</span>
+      <h2><Icon name="scroll" ink="#fff8e6" /> Changelog</h2>
+      <span class="hint">da vicino si scorre <Icon name="up-down" /></span>
     </header>
 
     <div ref="scroller" class="scroller">
@@ -84,8 +85,9 @@ h2 {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-right: 20px;
-  scrollbar-width: auto;
-  scrollbar-color: #ffd54a rgba(255, 255, 255, 0.08);
+  /* Le barre di scorrimento (App.vue) coi colori del cartellone. */
+  --scroll-thumb: #ffd54a;
+  --scroll-track: rgba(255, 255, 255, 0.08);
 }
 .day + .day {
   margin-top: 28px;

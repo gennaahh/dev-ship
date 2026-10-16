@@ -7,6 +7,8 @@ import { formatKg } from '../city/fishing/lake.js'
 import { toolStat } from '../city/mine/tools.js'
 import { useInventory } from '../composables/useInventory.js'
 import ItemIcon from './ItemIcon.vue'
+import Icon from './Icon.vue'
+import IconText from './IconText.vue'
 
 // Il crafting: in alto i banchi (la cucina, la forgia delle armi, delle armature, delle canne da
 // pesca e dei picconi), a sinistra le ricette del banco con quante se ne possono fare, a destra
@@ -33,16 +35,16 @@ function craftable(r) {
   return n === Infinity ? 0 : n
 }
 
-// La riga sotto il nome, nella lista: cosa fa.
+// La riga sotto il nome, nella lista: cosa fa, coi pezzi per IconText.
 const percent = (d) => `${Math.round(d * 100)}%`
 function statLine(r) {
-  if (r.heal) return `Cura ${r.heal} HP`
+  if (r.heal) return [{ text: `Cura ${r.heal} HP` }]
   const w = weapon(r.makes)
-  if (w) return `${w.damage[0]}–${w.damage[1]} danni`
+  if (w) return [{ text: `${w.damage[0]}–${w.damage[1]} danni` }]
   const a = armor(r.makes)
-  if (a) return `+${a.hp} HP · −${percent(a.defense)} danni`
+  if (a) return [{ text: `+${a.hp} HP` }, { text: `−${percent(a.defense)} danni` }]
   const t = tool(r.makes)
-  return t ? toolStat(t) : ''
+  return t ? toolStat(t) : []
 }
 // Come si dice di averlo addosso, e il pulsante per metterselo.
 const WORN = { weapon: 'Impugnata', armor: 'Indossata', rod: 'In mano', pickaxe: 'In mano' }
@@ -153,7 +155,7 @@ function onKeydown(e) {
     <header>
       <h2 id="crafting-title">Crafting</h2>
       <kbd title="Si apre e chiude anche col tasto R">R</kbd>
-      <button class="x" aria-label="Chiudi il crafting" @click="emit('close')">✕</button>
+      <button class="x" aria-label="Chiudi il crafting" @click="emit('close')"><Icon name="close" /></button>
     </header>
 
     <nav class="tabs" role="tablist" aria-label="Banchi del crafting">
@@ -186,9 +188,9 @@ function onKeydown(e) {
           <ItemIcon :id="r.makes" />
           <span class="recipe-text">
             {{ r.name }}
-            <small>{{ statLine(r) }}</small>
+            <small><IconText :parts="statLine(r)" /></small>
           </span>
-          <span v-if="r.category !== 'kitchen' && inventory.count(r.makes)" class="have" :title="`Ne hai ${inventory.count(r.makes)}`">{{ Object.values(equipment).includes(r.makes) ? '✓' : `hai ${inventory.count(r.makes)}` }}</span>
+          <span v-if="r.category !== 'kitchen' && inventory.count(r.makes)" class="have" :title="`Ne hai ${inventory.count(r.makes)}`"><Icon v-if="Object.values(equipment).includes(r.makes)" name="check" /><template v-else>hai {{ inventory.count(r.makes) }}</template></span>
           <span class="badge" :class="{ can: craftable(r) > 0 }" :title="craftable(r) > 0 ? `Ne puoi fare ${craftable(r)}` : 'Mancano ingredienti'">
             {{ craftable(r) > 0 ? `× ${craftable(r)}` : 'manca' }}
           </span>
@@ -199,7 +201,7 @@ function onKeydown(e) {
         <div class="title">
           <h3>{{ selected.name }}</h3>
           <span v-if="made" class="tier">Livello {{ made.tier }}</span>
-          <span v-if="worn" class="tier worn">{{ WORN[made.slot] }} ✓</span>
+          <span v-if="worn" class="tier worn">{{ WORN[made.slot] }} <Icon name="check" /></span>
         </div>
         <div class="formula">
           <div class="ingredients">
@@ -222,19 +224,19 @@ function onKeydown(e) {
               </li>
             </ul>
           </div>
-          <span class="arrow" aria-hidden="true">➜</span>
+          <span class="arrow" aria-hidden="true"><Icon name="arrow-right" /></span>
           <div class="result">
             <ItemIcon :id="selected.makes" />
             <span v-if="cooked" :key="cooked" class="plus" aria-hidden="true">+1</span>
-            <span v-if="selected.heal" class="stat heal">❤ Cura {{ selected.heal }} HP</span>
-            <span v-else-if="made?.slot === 'weapon'" class="stat damage">⚔ {{ made.damage[0] }}–{{ made.damage[1] }} danni</span>
+            <span v-if="selected.heal" class="stat heal"><Icon name="heart" /> Cura {{ selected.heal }} HP</span>
+            <span v-else-if="made?.slot === 'weapon'" class="stat damage"><Icon name="swords" /> {{ made.damage[0] }}–{{ made.damage[1] }} danni</span>
             <template v-else-if="made?.slot === 'rod' || made?.slot === 'pickaxe'">
-              <span class="stat speed">⏱ −{{ percent(made.speed) }} attesa</span>
-              <span class="stat luck">🍀 +{{ percent(made.luck) }} rari</span>
+              <span class="stat speed"><Icon name="timer" /> −{{ percent(made.speed) }} attesa</span>
+              <span class="stat luck"><Icon name="clover" /> +{{ percent(made.luck) }} rari</span>
             </template>
             <template v-else-if="made">
-              <span class="stat heal">❤ +{{ made.hp }} HP</span>
-              <span class="stat defense">🛡 −{{ percent(made.defense) }} danni</span>
+              <span class="stat heal"><Icon name="heart" /> +{{ made.hp }} HP</span>
+              <span class="stat defense"><Icon name="shield" /> −{{ percent(made.defense) }} danni</span>
             </template>
           </div>
         </div>
@@ -259,6 +261,9 @@ function onKeydown(e) {
 
 <style scoped>
 .crafting {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #ff9e80;
+  --scroll-track: #f6e2d8;
   width: min(900px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   box-sizing: border-box;

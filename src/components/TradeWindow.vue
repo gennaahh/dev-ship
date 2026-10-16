@@ -6,6 +6,7 @@ import { formatKg, speciesFor } from '../city/fishing/lake.js'
 import { useInventory } from '../composables/useInventory.js'
 import { useTrade } from '../composables/useTrade.js'
 import ItemIcon from './ItemIcon.vue'
+import Icon from './Icon.vue'
 
 // La finestra dello scambio, per tutti e due i giocatori: a sinistra la propria offerta (monete,
 // pesci e oggetti scelti dal proprio inventario: zuppe, ticket, materiali, minerali, armi,
@@ -88,7 +89,7 @@ const fishScale = (kg) => 0.55 + Math.min(kg, 20) / 100
 // Un riassunto in una riga, per il controllo finale e il resoconto.
 function summary(o) {
   const parts = []
-  if (o.gold) parts.push(`🪙 ${o.gold}`)
+  if (o.gold) parts.push(`${o.gold} ${o.gold === 1 ? 'moneta' : 'monete'}`)
   if (o.fish.length) parts.push(`${o.fish.length} ${o.fish.length === 1 ? 'pesce' : 'pesci'}`)
   for (const [id, n] of Object.entries(o.items)) parts.push(`${n} × ${itemName(id)}`)
   return parts.join(', ') || 'niente'
@@ -101,7 +102,7 @@ watch(t, (v) => v && (readyAt.value = Date.now() + v.readyIn), { immediate: true
 const clock = setInterval(() => (now.value = Date.now()), 250)
 const wait = computed(() => Math.ceil(Math.max(0, readyAt.value - now.value) / 1000))
 
-const state = (side) => (side.confirmed ? 'Ha confermato ✓' : side.ready ? 'Pronto ✓' : 'Sta scegliendo…')
+const state = (side) => (side.confirmed ? 'Ha confermato' : side.ready ? 'Pronto' : 'Sta scegliendo…')
 
 const dialog = ref(null)
 onMounted(() => dialog.value.showModal())
@@ -127,15 +128,15 @@ function close() {
     <template v-if="t">
       <header>
         <h2 id="trade-title">Scambio con {{ t.them.name }}</h2>
-        <button class="x" aria-label="Annulla lo scambio" :disabled="t.busy" @click="close">✕</button>
+        <button class="x" aria-label="Annulla lo scambio" :disabled="t.busy" @click="close"><Icon name="close" /></button>
       </header>
 
       <div class="sides">
         <section class="side" :class="{ ready: t.me.ready }">
-          <h3>Tu offri <span class="state">{{ state(t.me) }}</span></h3>
+          <h3>Tu offri <span class="state">{{ state(t.me) }}<Icon v-if="t.me.ready || t.me.confirmed" name="check" /></span></h3>
           <div class="offer">
             <label class="gold-row">
-              🪙
+              <Icon name="coin" />
               <input type="number" min="0" :max="gold" :value="draft.gold" :disabled="!editable" aria-label="Monete da offrire" @input="setGold" />
               <small>di {{ gold }}</small>
             </label>
@@ -143,12 +144,12 @@ function close() {
               <li v-for="f in mine.fish" :key="`f${f.id}`" class="card">
                 <svg viewBox="-68 -36 136 72" aria-hidden="true"><Fish :kg="f.weightKg" :wiggle="false" :transform="`scale(${fishScale(f.weightKg)})`" /></svg>
                 <span>{{ formatKg(f.weightKg) }}</span>
-                <button v-if="editable" class="remove" :aria-label="`Togli il pesce da ${formatKg(f.weightKg)}`" @click="removeFish(f.id)">✕</button>
+                <button v-if="editable" class="remove" :aria-label="`Togli il pesce da ${formatKg(f.weightKg)}`" @click="removeFish(f.id)"><Icon name="close" /></button>
               </li>
               <li v-for="(n, id) in mine.items" :key="id" class="card">
                 <ItemIcon :id="id" />
                 <span>{{ itemName(id) }}<b v-if="n > 1"> × {{ n }}</b></span>
-                <button v-if="editable" class="remove" :aria-label="`Togli un ${itemName(id)}`" @click="removeItem(id)">✕</button>
+                <button v-if="editable" class="remove" :aria-label="`Togli un ${itemName(id)}`" @click="removeItem(id)"><Icon name="close" /></button>
               </li>
             </ul>
             <p v-if="!mine.fish.length && !Object.keys(mine.items).length" class="empty">Scegli qui sotto cosa offrire.</p>
@@ -178,9 +179,9 @@ function close() {
         </section>
 
         <section class="side theirs" :class="{ ready: t.them.ready }">
-          <h3>{{ t.them.name }} offre <span class="state">{{ state(t.them) }}</span></h3>
+          <h3>{{ t.them.name }} offre <span class="state">{{ state(t.them) }}<Icon v-if="t.them.ready || t.them.confirmed" name="check" /></span></h3>
           <div class="offer">
-            <p class="gold-row">🪙 <strong>{{ t.them.offer.gold }}</strong></p>
+            <p class="gold-row"><Icon name="coin" /> <strong>{{ t.them.offer.gold }}</strong></p>
             <ul class="cards">
               <li v-for="f in t.them.offer.fish" :key="`f${f.id}`" class="card" :title="speciesFor(f.weightKg).name">
                 <svg viewBox="-68 -36 136 72" aria-hidden="true"><Fish :kg="f.weightKg" :wiggle="false" :transform="`scale(${fishScale(f.weightKg)})`" /></svg>
@@ -223,7 +224,7 @@ function close() {
     <!-- Com'è andata -->
     <template v-else-if="done">
       <header>
-        <h2 id="trade-title">Scambio fatto! 🤝</h2>
+        <h2 id="trade-title">Scambio fatto! <Icon name="trade" /></h2>
       </header>
       <p class="result"><span class="get">Hai ricevuto da {{ done.with }}: {{ summary(done.got) }}</span></p>
       <p class="result"><span class="give">Hai dato: {{ summary(done.gave) }}</span></p>
@@ -236,6 +237,9 @@ function close() {
 
 <style scoped>
 .trade {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #7fd1b0;
+  --scroll-track: #e2f3ec;
   width: min(860px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   box-sizing: border-box;

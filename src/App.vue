@@ -112,6 +112,40 @@ const trade = useTrade()
 </template>
 
 <style>
+/* Le barre di scorrimento, ovunque disegnate come il resto della città: il cursore arrotondato
+   col contorno scuro su una guida chiara. I colori li sceglie l'area che scorre (di solito la
+   finestra), con --scroll-thumb (il cursore), --scroll-track (la guida) e --scroll-edge (il
+   contorno). Chrome, Edge e Safari usano ::-webkit-scrollbar; Firefox, che non lo conosce, solo i
+   colori con scrollbar-color (dove c'è, Chrome ignorerebbe ::-webkit-scrollbar: per questo è a parte). */
+:root {
+  --scroll-thumb: #ffd54a;
+  --scroll-track: rgba(45, 42, 74, 0.1);
+  --scroll-edge: #2d2a4a;
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  }
+}
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+/* Il margine tiene la guida lontana dagli angoli arrotondati delle finestre. */
+::-webkit-scrollbar-track {
+  margin: 14px;
+  border-radius: 7px;
+  background: var(--scroll-track);
+}
+::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 3px solid var(--scroll-edge);
+  border-radius: 7px;
+  background: var(--scroll-thumb);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
 html, body {
   margin: 0;
   height: 100%;

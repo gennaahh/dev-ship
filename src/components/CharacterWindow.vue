@@ -8,6 +8,8 @@ import { COLORS, HATS, lookOf } from '../city/avatar.js'
 import { toolStat } from '../city/mine/tools.js'
 import { useInventory } from '../composables/useInventory.js'
 import ItemIcon from './ItemIcon.vue'
+import Icon from './Icon.vue'
+import IconText from './IconText.vue'
 
 // Personaggio ed equipaggiamento: a sinistra il personaggio con quello che indossa (cappello,
 // colore, arma, armatura, canna e piccone), come va nel dungeon e quanto aiutano gli attrezzi, a
@@ -58,7 +60,7 @@ function onKeydown(e) {
     <header>
       <h2 id="character-title">Personaggio</h2>
       <kbd title="Si apre e chiude anche col tasto C">C</kbd>
-      <button class="x" aria-label="Chiudi la finestra del personaggio" @click="emit('close')">✕</button>
+      <button class="x" aria-label="Chiudi la finestra del personaggio" @click="emit('close')"><Icon name="close" /></button>
     </header>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -73,7 +75,7 @@ function onKeydown(e) {
         <div class="slot">
           <span class="slot-icon">
             <svg v-if="hat" viewBox="-55 -135 110 100" aria-hidden="true"><Avatar :look="{ color: look.color, hat: hat.id }" /></svg>
-            <span v-else class="empty-slot" aria-hidden="true">🎩</span>
+            <span v-else class="empty-slot" aria-hidden="true"><Icon name="hat" /></span>
           </span>
           <span class="slot-text">
             <small>Cappello</small>
@@ -94,7 +96,7 @@ function onKeydown(e) {
         <div class="slot">
           <span class="slot-icon">
             <ItemIcon v-if="weapon" :id="weapon.id" />
-            <span v-else class="empty-slot" aria-hidden="true">⚔</span>
+            <span v-else class="empty-slot" aria-hidden="true"><Icon name="swords" /></span>
           </span>
           <span class="slot-text">
             <small>Arma</small>
@@ -105,7 +107,7 @@ function onKeydown(e) {
         <div class="slot">
           <span class="slot-icon">
             <ItemIcon v-if="armor" :id="armor.id" />
-            <span v-else class="empty-slot" aria-hidden="true">🛡</span>
+            <span v-else class="empty-slot" aria-hidden="true"><Icon name="shield" /></span>
           </span>
           <span class="slot-text">
             <small>Armatura</small>
@@ -116,7 +118,7 @@ function onKeydown(e) {
         <div class="slot">
           <span class="slot-icon">
             <ItemIcon v-if="rod" :id="rod.id" />
-            <span v-else class="empty-slot" aria-hidden="true">🎣</span>
+            <span v-else class="empty-slot" aria-hidden="true"><Icon name="rod" /></span>
           </span>
           <span class="slot-text">
             <small>Canna da pesca</small>
@@ -127,7 +129,7 @@ function onKeydown(e) {
         <div class="slot">
           <span class="slot-icon">
             <ItemIcon v-if="pickaxe" :id="pickaxe.id" />
-            <span v-else class="empty-slot" aria-hidden="true">⛏</span>
+            <span v-else class="empty-slot" aria-hidden="true"><Icon name="pickaxe" /></span>
           </span>
           <span class="slot-text">
             <small>Piccone</small>
@@ -137,14 +139,14 @@ function onKeydown(e) {
         </div>
         <div class="stats" title="Con quello che indossi, nel dungeon">
           <small>Nel dungeon</small>
-          <span>⚔ {{ stats.damage[0] }}–{{ stats.damage[1] }}</span>
-          <span>❤ {{ stats.maxHp }}</span>
-          <span>🛡 −{{ percent(stats.defense) }}</span>
+          <span><Icon name="swords" /> {{ stats.damage[0] }}–{{ stats.damage[1] }}</span>
+          <span><Icon name="heart" /> {{ stats.maxHp }}</span>
+          <span><Icon name="shield" /> −{{ percent(stats.defense) }}</span>
         </div>
         <div class="stats tools-stats" title="Con la canna e il piccone che hai in mano: quanto meno si aspetta e quanto più spesso arrivano pesci speciali e scoperte rare">
           <small>Al lago e in miniera</small>
-          <span>🎣 {{ toolBonus(rod) }}</span>
-          <span>⛏ {{ toolBonus(pickaxe) }}</span>
+          <span><Icon name="rod" /> {{ toolBonus(rod) }}</span>
+          <span><Icon name="pickaxe" /> {{ toolBonus(pickaxe) }}</span>
         </div>
       </section>
 
@@ -163,8 +165,8 @@ function onKeydown(e) {
             >
               <ItemIcon :id="w.id" />
               <span class="item-name">{{ w.name }}</span>
-              <span class="gear-stat">⚔ {{ w.damage[0] }}–{{ w.damage[1] }} danni</span>
-              <span class="state">{{ weapon?.id === w.id ? 'Impugnata ✓' : 'Impugna' }}</span>
+              <span class="gear-stat"><Icon name="swords" /> {{ w.damage[0] }}–{{ w.damage[1] }} danni</span>
+              <span class="state">{{ weapon?.id === w.id ? 'Impugnata' : 'Impugna' }}<Icon v-if="weapon?.id === w.id" name="check" /></span>
             </button>
             <button
               v-for="a in inventory.armors.value"
@@ -176,8 +178,8 @@ function onKeydown(e) {
             >
               <ItemIcon :id="a.id" />
               <span class="item-name">{{ a.name }}</span>
-              <span class="gear-stat">❤ +{{ a.hp }} HP · 🛡 −{{ percent(a.defense) }}</span>
-              <span class="state">{{ armor?.id === a.id ? 'Indossata ✓' : 'Indossa' }}</span>
+              <span class="gear-stat"><Icon name="heart" /> +{{ a.hp }} HP · <Icon name="shield" /> −{{ percent(a.defense) }}</span>
+              <span class="state">{{ armor?.id === a.id ? 'Indossata' : 'Indossa' }}<Icon v-if="armor?.id === a.id" name="check" /></span>
             </button>
           </div>
         </section>
@@ -196,8 +198,8 @@ function onKeydown(e) {
             >
               <ItemIcon :id="t.id" />
               <span class="item-name">{{ t.name }}</span>
-              <span class="gear-stat">{{ toolStat(t) }}</span>
-              <span class="state">{{ equipment[t.slot] === t.id ? 'In mano ✓' : 'Prendi' }}</span>
+              <IconText class="gear-stat" :parts="toolStat(t)" />
+              <span class="state">{{ equipment[t.slot] === t.id ? 'In mano' : 'Prendi' }}<Icon v-if="equipment[t.slot] === t.id" name="check" /></span>
             </button>
           </div>
         </section>
@@ -209,7 +211,7 @@ function onKeydown(e) {
             <button v-for="h in hats" :key="h.id" class="card wearable" :class="{ on: equipment.hat === h.id }" :disabled="busy" @click="wear('hat', h.id)">
               <svg viewBox="-55 -135 110 100" aria-hidden="true"><Avatar :look="{ color: look.color, hat: h.id }" /></svg>
               <span class="item-name">{{ h.name }}</span>
-              <span class="state">{{ equipment.hat === h.id ? 'Indossato ✓' : 'Indossa' }}</span>
+              <span class="state">{{ equipment.hat === h.id ? 'Indossato' : 'Indossa' }}<Icon v-if="equipment.hat === h.id" name="check" /></span>
             </button>
           </div>
         </section>
@@ -238,6 +240,9 @@ function onKeydown(e) {
 
 <style scoped>
 .character {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #b9a4f5;
+  --scroll-track: #ece6fb;
   width: min(820px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   box-sizing: border-box;

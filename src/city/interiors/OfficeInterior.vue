@@ -20,6 +20,7 @@ import TableSeat from '../office/TableSeat.vue'
 import WallBoard from '../office/WallBoard.vue'
 import SpeechBubble from '../SpeechBubble.vue'
 import InteriorLayout from './InteriorLayout.vue'
+import Icon from '../../components/Icon.vue'
 
 defineProps({ place: { type: Object, required: true } })
 defineEmits(['leave'])
@@ -231,7 +232,7 @@ const status = computed(() => {
   if (st !== 'online') return { text: 'Server di gioco non raggiungibile: per ora si passeggia soltanto' }
   if (mySeat.value) {
     const c = myCoffee.value
-    return { text: c ? `Seduto al tavolo · ☕ ${c.name}, ancora ${leftText(c.left)}` : 'Seduto al tavolo: con un caffè si chiacchiera meglio', stand: true }
+    return c ? { icon: 'coffee', text: `Seduto al tavolo · ${c.name}, ancora ${leftText(c.left)}`, stand: true } : { text: 'Seduto al tavolo: con un caffè si chiacchiera meglio', stand: true }
   }
   if (seatTaken.value) return { text: 'Qualcuno si è seduto prima di te: scegli un altro posto', tone: 'taken' }
   if (goingSeat.value !== null) return { text: 'Vai al tavolo…' }
@@ -332,12 +333,12 @@ const coffeeName = computed(() => (myCoffee.value ? coffee(myCoffee.value.id)?.n
 
     <div v-if="!zoomed" class="top">
       <div class="status" :class="status.tone" role="status">
-        <span>{{ status.text }}</span>
+        <span><Icon v-if="status.icon" :name="status.icon" /> {{ status.text }}</span>
         <button v-if="status.stand" class="stand" @click="room.stand()">Alzati</button>
       </div>
       <div class="quick">
-        <button @click="zoomed = true">📌 Bacheca<span v-if="office.ready.value" class="dot" title="Missione pronta da consegnare">✓</span></button>
-        <button @click="openCoffee">☕ {{ coffeeName ?? 'Caffè' }}</button>
+        <button @click="zoomed = true"><Icon name="pin" /> Bacheca<span v-if="office.ready.value" class="dot" title="Missione pronta da consegnare"><Icon name="check" /></span></button>
+        <button @click="openCoffee"><Icon name="coffee" /> {{ coffeeName ?? 'Caffè' }}</button>
       </div>
     </div>
 

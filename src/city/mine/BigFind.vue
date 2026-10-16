@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { mineral } from '@dev-city/shared/catalog'
 import { GLOW } from './mine.js'
 import MineralIcon from './MineralIcon.vue'
+import Icon from '../../components/Icon.vue'
 
 // La festa per una scoperta preziosa (dalla pepita d'oro in su, isBigFind nel catalogo), sopra
 // tutta la miniera: lampo, raggi del colore della gemma che girano, coriandoli, la gemma gigante
@@ -83,7 +84,7 @@ onUnmounted(() => {
       <p class="who">{{ who }} {{ article }} <b>{{ item?.name }}</b></p>
       <div class="numbers">
         <span class="kind">{{ item?.rarity === 'rare' ? 'Rarissimo' : 'Raro' }}</span>
-        <span class="points">+{{ shown }} 🪙</span>
+        <span class="points">+{{ shown }} <Icon name="coin" /></span>
       </div>
     </div>
   </div>

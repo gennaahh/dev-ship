@@ -15,6 +15,7 @@ import TicketBottle from '../dungeon/TicketBottle.vue'
 import GearIcon from '../mine/GearIcon.vue'
 import { monsterX, STAGE, useRunPlayback } from '../dungeon/useRunPlayback.js'
 import InteriorLayout from './InteriorLayout.vue'
+import Icon from '../../components/Icon.vue'
 
 defineProps({ place: { type: Object, required: true } })
 defineEmits(['leave'])
@@ -187,14 +188,14 @@ const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
       <span class="wave">Ondata {{ state.wave }}<small>/{{ MAX_WAVES }}</small></span>
       <span class="hp" :title="`${state.hp} HP su ${state.maxHp}`">
         <span class="hp-fill" :class="{ low: state.hp <= SOUP_BELOW }" :style="{ width: `${hpPercent}%` }" />
-        <span class="hp-text">❤ {{ state.hp }}</span>
+        <span class="hp-text"><Icon name="heart" /> {{ state.hp }}</span>
       </span>
       <span class="pill" title="Zuppe di pesce rimaste">
         <svg viewBox="-56 -56 112 104" aria-hidden="true"><SoupBowl :steam="false" /></svg>{{ state.soups }}
       </span>
-      <span class="pill" title="Monete raccolte">🪙 {{ state.gold }}</span>
-      <span class="pill" title="Materiali raccolti">🎒 {{ looted }}</span>
-      <button class="skip" @click="skip">Salta ⏭</button>
+      <span class="pill" title="Monete raccolte"><Icon name="coin" /> {{ state.gold }}</span>
+      <span class="pill" title="Materiali raccolti"><Icon name="backpack" /> {{ looted }}</span>
+      <button class="skip" @click="skip">Salta <Icon name="skip" /></button>
     </div>
 
     <!-- L'ingresso: ticket, zuppe e il pulsante per entrare -->
@@ -216,17 +217,17 @@ const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
         <div class="gear">
           <div class="gear-slot" :class="{ none: !weapon }">
             <svg v-if="weapon" viewBox="-36 -36 72 72" aria-hidden="true"><GearIcon :id="weapon.id" /></svg>
-            <span v-else class="gear-empty" aria-hidden="true">⚔</span>
+            <span v-else class="gear-empty" aria-hidden="true"><Icon name="swords" /></span>
             <span class="gear-text"><small>Arma</small>{{ weapon?.name ?? 'Spada di legno' }}</span>
           </div>
           <div class="gear-slot" :class="{ none: !armor }">
             <svg v-if="armor" viewBox="-36 -36 72 72" aria-hidden="true"><GearIcon :id="armor.id" /></svg>
-            <span v-else class="gear-empty" aria-hidden="true">🛡</span>
+            <span v-else class="gear-empty" aria-hidden="true"><Icon name="shield" /></span>
             <span class="gear-text"><small>Armatura</small>{{ armor?.name ?? 'Nessuna' }}</span>
           </div>
-          <p class="gear-stats">⚔ {{ stats.damage[0] }}–{{ stats.damage[1] }} danni · ❤ {{ stats.maxHp }} HP · 🛡 −{{ Math.round(stats.defense * 100) }}% danni</p>
+          <p class="gear-stats"><Icon name="swords" /> {{ stats.damage[0] }}–{{ stats.damage[1] }} danni · <Icon name="heart" /> {{ stats.maxHp }} HP · <Icon name="shield" /> −{{ Math.round(stats.defense * 100) }}% danni</p>
         </div>
-        <p v-if="ginseng" class="note coffee">☕ {{ ginseng.name }}: +{{ ginseng.dungeon.damage }} danni a colpo e +{{ ginseng.dungeon.hp }} HP in questa run (poi è finito).</p>
+        <p v-if="ginseng" class="note coffee"><Icon name="coffee" /> {{ ginseng.name }}: +{{ ginseng.dungeon.damage }} danni a colpo e +{{ ginseng.dungeon.hp }} HP in questa run (poi è finito).</p>
         <p v-if="!weapon || !armor" class="note">Armi e armature si forgiano col crafting <kbd>R</kbd> (minerali della miniera e materiali del dungeon) e si indossano dalla finestra del personaggio <kbd>C</kbd>.</p>
         <p v-if="!inventory.tickets.value" class="note">Nessun ticket. Al lago, una volta su 15, insieme al pesce sale una bottiglia con un ticket dentro.</p>
         <p v-else-if="!inventory.soups.value" class="note">Niente zuppe: la run sarà breve. Col crafting <kbd>R</kbd> 3 pesci diventano una zuppa, che sotto i {{ SOUP_BELOW }} HP ti ridà {{ SOUP_HEAL }} HP.</p>
@@ -246,7 +247,7 @@ const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
       <p v-if="demo" class="note">Run di prova: niente premi.</p>
       <ul class="stats">
         <li><strong>{{ wavesBeaten }}</strong> {{ wavesBeaten === 1 ? 'ondata superata' : 'ondate superate' }}</li>
-        <li><strong>🪙 {{ state.gold }}</strong> monete</li>
+        <li><strong><Icon name="coin" /> {{ state.gold }}</strong> monete</li>
         <li><strong>{{ soupsDrunk }}</strong> {{ soupsDrunk === 1 ? 'zuppa bevuta' : 'zuppe bevute' }}</li>
       </ul>
       <ul v-if="dropped.length" class="loot">
@@ -448,6 +449,9 @@ button {
   font-size: 15px;
 }
 .panel {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #b9a4f5;
+  --scroll-track: #ece6fb;
   position: absolute;
   top: 50%;
   left: 50%;

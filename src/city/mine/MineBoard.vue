@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { mineral } from '@dev-city/shared/catalog'
 import MineralIcon from './MineralIcon.vue'
 import { ago } from './mine.js'
+import Icon from '../../components/Icon.vue'
 
 // Il cartellone della miniera, appeso alla parete in alto a sinistra (dentro l'<svg>, in
 // coordinate della scena). Alterna da solo la classifica di oggi, della settimana e di sempre
@@ -66,7 +67,8 @@ const TAB_W = [62, 104, 76, 70]
       <rect x="94" y="78" width="342" height="208" rx="8" fill="#2a2238" />
     </g>
 
-    <text x="265" y="106" text-anchor="middle" class="title">{{ recent ? '💎 Ultime scoperte' : '⛏ Classifica della miniera' }}</text>
+    <Icon :name="recent ? 'gem' : 'pickaxe'" :x="104" :y="87" :size="24" ink="#fff8e6" />
+    <text x="265" y="106" text-anchor="middle" class="title">{{ recent ? 'Ultime scoperte' : 'Classifica della miniera' }}</text>
 
     <!-- Schede: oggi, settimana, sempre, ultime scoperte -->
     <g v-for="(t, i) in TABS" :key="t.id">
@@ -92,7 +94,8 @@ const TAB_W = [62, 104, 76, 70]
           <text x="134" y="0" class="name">{{ short(r.name) }}</text>
           <text x="318" y="0" text-anchor="end" class="meta">{{ r.finds }} {{ r.finds === 1 ? 'scoperta' : 'scoperte' }}</text>
           <g v-if="r.best" transform="translate(334 -6) scale(0.36)"><MineralIcon :id="r.best" /></g>
-          <text x="420" y="0" text-anchor="end" class="points">🪙{{ r.value }}</text>
+          <text x="404" y="0" text-anchor="end" class="points">{{ r.value }}</text>
+          <Icon name="coin" :x="406" :y="-14" :size="16" ink="#fff8e6" />
         </g>
       </g>
     </g>

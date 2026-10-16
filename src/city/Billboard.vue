@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import DevShip from '../components/DevShip.vue'
 import Leaderboard from './Leaderboard.vue'
 import Changelog from './Changelog.vue'
+import Icon from '../components/Icon.vue'
 
 const props = defineProps({
   zoomed: { type: Boolean, default: false },
@@ -75,7 +76,7 @@ function onClick() {
         </div>
         <div :key="cycle" class="glitch" aria-hidden="true" />
         <div class="glare" aria-hidden="true" />
-        <span v-if="paused" class="pause">❚❚ in pausa</span>
+        <span v-if="paused" class="pause"><Icon name="pause" /> in pausa</span>
       </div>
 
       <div class="tabs">

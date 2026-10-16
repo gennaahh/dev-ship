@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { authClient, displayName } from '../auth.js'
+import Icon from './Icon.vue'
 
 // In basso a sinistra, sopra le spie: "Accedi con GitHub" manda a GitHub e torna qui;
 // da loggati mostra il nome e "Esci". In sviluppo si entra anche solo con un nome (dev-login.ts
@@ -59,7 +60,7 @@ async function devSignIn() {
 <template>
   <div class="account">
     <template v-if="user">
-      <span class="who">👤 {{ displayName(user) }}</span>
+      <span class="who"><Icon name="user" /> {{ displayName(user) }}</span>
       <button class="link" @click="signOut">Esci</button>
     </template>
     <template v-else>

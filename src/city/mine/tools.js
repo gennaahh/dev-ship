@@ -23,5 +23,8 @@ export const TOOL_LOOKS = {
 export const rodLook = (id) => TOOL_LOOKS[id] ?? NO_ROD
 export const pickaxeLook = (id) => TOOL_LOOKS[id] ?? NO_PICKAXE
 
-// Cosa fa un attrezzo, in breve: "−10% attesa · +20% rari".
-export const toolStat = (t) => `⏱ −${Math.round(t.speed * 100)}% attesa · 🍀 +${Math.round(t.luck * 100)}% rari`
+// Cosa fa un attrezzo, in breve, coi pezzi per IconText: "−10% attesa · +20% rari".
+export const toolStat = (t) => [
+  { icon: 'timer', text: `−${Math.round(t.speed * 100)}% attesa` },
+  { icon: 'clover', text: `+${Math.round(t.luck * 100)}% rari` },
+]

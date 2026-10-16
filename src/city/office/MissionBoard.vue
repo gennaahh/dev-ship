@@ -8,6 +8,7 @@ import { BACKEND_ENABLED } from '../../config.js'
 import MissionItems from './MissionItems.vue'
 import MissionReward from './MissionReward.vue'
 import { minutesLeft, NOTE_COLORS } from './office.js'
+import Icon from '../../components/Icon.vue'
 
 // La bacheca delle missioni vista da vicino, sopra la scena dell'ufficio (che ci ha zoomato
 // sopra): i foglietti da fare col premio e il pulsante per prenderli, chi ci sta lavorando e le
@@ -64,7 +65,7 @@ const openMission = () => (inventory.open.value = 'mission')
 <template>
   <section class="board" aria-labelledby="board-title" @click.stop>
     <header>
-      <button class="close" aria-label="Allontanati dalla bacheca" @click="emit('close')">← Torna alla stanza</button>
+      <button class="close" aria-label="Allontanati dalla bacheca" @click="emit('close')"><Icon name="arrow-left" /> Torna alla stanza</button>
       <h2 id="board-title">Bacheca delle missioni</h2>
       <p class="status" :class="status.tone" aria-live="polite">
         {{ status.text }}
@@ -110,7 +111,7 @@ const openMission = () => (inventory.open.value = 'mission')
         <ul v-if="board?.done.length" class="list">
           <li v-for="(d, i) in board.done" :key="`done-${i}`">
             <strong>{{ d.name }}</strong>
-            <span>{{ d.title }} · 🪙 {{ d.reward.gold }}</span>
+            <span>{{ d.title }} · <Icon name="coin" /> {{ d.reward.gold }}</span>
           </li>
         </ul>
         <p v-else class="empty">Ancora nessuna</p>
@@ -122,6 +123,9 @@ const openMission = () => (inventory.open.value = 'mission')
 <style scoped>
 /* La bacheca: sughero in una cornice di legno, al centro sotto al pulsante per tornare. */
 .board {
+  /* Le barre di scorrimento (App.vue) chiare sul sughero. */
+  --scroll-thumb: #fff8e6;
+  --scroll-track: rgba(45, 42, 74, 0.25);
   position: absolute;
   top: 84px;
   left: 50%;

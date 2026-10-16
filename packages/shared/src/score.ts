@@ -11,11 +11,12 @@ import { mineral } from './catalog.ts'
 // bun packages/shared/scripts/score-balance.ts
 
 export type Game = 'fishing' | 'mining' | 'dungeon' | 'mission'
+// icon: il nome dell'icona del frontend (src/components/Icon.vue).
 export const GAMES: { id: Game; name: string; icon: string }[] = [
-  { id: 'fishing', name: 'Pesca', icon: '🐟' },
-  { id: 'mining', name: 'Miniera', icon: '⛏' },
-  { id: 'dungeon', name: 'Dungeon', icon: '🐞' },
-  { id: 'mission', name: 'Missioni', icon: '📌' },
+  { id: 'fishing', name: 'Pesca', icon: 'fish' },
+  { id: 'mining', name: 'Miniera', icon: 'pickaxe' },
+  { id: 'dungeon', name: 'Dungeon', icon: 'bug' },
+  { id: 'mission', name: 'Missioni', icon: 'pin' },
 ]
 
 // Pesca: 10 punti per chilo, cioè 1 ogni etto (gli stessi della classifica del lago).

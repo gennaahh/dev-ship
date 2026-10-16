@@ -1,4 +1,6 @@
 <script setup>
+import Icon from '../../components/Icon.vue'
+
 // L'angolo del caffè, in fondo a destra: un tavolino appoggiato alla parete con sopra la
 // macchinetta, le tazzine impilate e lo zucchero, e sotto la scorta di cialde. Da mettere
 // dentro l'<svg> dell'ufficio (coordinate della scena), in ordine di profondità coi personaggi
@@ -80,7 +82,10 @@ const PODS = ['#5a3a22', '#d9b48a', '#8a5a3a', '#c9935a', '#7a4a2a', '#6b4a3a']
         <path d="M 1442 362 L 1452 340" fill="none" stroke="#b8c2d4" stroke-width="4" />
       </g>
     </g>
-    <text x="1350" y="244" text-anchor="middle" class="hint">☕ Un caffè?</text>
+    <g class="hint">
+      <Icon name="coffee" :x="1274" :y="224" :size="26" />
+      <text x="1364" y="244" text-anchor="middle">Un caffè?</text>
+    </g>
   </g>
 </template>
 

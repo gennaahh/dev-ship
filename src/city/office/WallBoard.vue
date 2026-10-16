@@ -1,5 +1,6 @@
 <script setup>
 import { NOTE_COLORS } from './office.js'
+import Icon from '../../components/Icon.vue'
 
 // La bacheca delle missioni appesa alla parete, in fondo a sinistra, da mettere dentro l'<svg>
 // dell'ufficio (coordinate della scena): da lontano si vedono i foglietti, colore e premio. Un
@@ -35,14 +36,19 @@ const short = (t) => (t.length > 18 ? `${t.slice(0, 17)}…` : t)
       <rect x="250" y="92" width="160" height="36" rx="8" fill="#fff8e6" />
       <text x="330" y="118" text-anchor="middle" class="title" stroke="none">MISSIONI</text>
       <circle v-if="ready" cx="404" cy="96" r="12" fill="#9ccc65" stroke-width="3" />
-      <text v-if="ready" x="404" y="101" text-anchor="middle" class="tick" stroke="none">✓</text>
+      <Icon v-if="ready" name="check" :x="396" :y="88" :size="16" style="color: #2d2a4a" />
     </g>
     <g v-for="(n, i) in NOTES" :key="i" :transform="`rotate(${n.r} ${n.x + 82} ${n.y + 42})`">
       <template v-if="missions?.[i]">
         <rect :x="n.x" :y="n.y" width="164" height="84" rx="4" :fill="NOTE_COLORS[missions[i].difficulty]" stroke="#2d2a4a" stroke-width="4" />
         <circle :cx="n.x + 82" :cy="n.y + 2" r="7" fill="#e8453c" stroke="#2d2a4a" stroke-width="3" />
         <text :x="n.x + 12" :y="n.y + 34" class="note-title">{{ short(missions[i].title) }}</text>
-        <text :x="n.x + 12" :y="n.y + 66" class="note-reward">🪙 {{ missions[i].reward.gold }}{{ missions[i].reward.items.dungeon_ticket ? ' + 🎟' : '' }}</text>
+        <Icon name="coin" :x="n.x + 10" :y="n.y + 49" :size="21" />
+        <text :x="n.x + 35" :y="n.y + 66" class="note-reward">{{ missions[i].reward.gold }}</text>
+        <template v-if="missions[i].reward.items.dungeon_ticket">
+          <text :x="n.x + 86" :y="n.y + 66" class="note-reward">+</text>
+          <Icon name="ticket" :x="n.x + 100" :y="n.y + 47" :size="26" />
+        </template>
       </template>
       <rect v-else :x="n.x" :y="n.y" width="164" height="84" rx="4" fill="#fff8e6" opacity="0.4" stroke="#2d2a4a" stroke-width="3" stroke-dasharray="8 6" />
     </g>
@@ -59,10 +65,6 @@ const short = (t) => (t.length > 18 ? `${t.slice(0, 17)}…` : t)
   fill: #2d2a4a;
   font-size: 22px;
   letter-spacing: 2px;
-}
-.tick {
-  fill: #2d2a4a;
-  font: 800 15px system-ui, sans-serif;
 }
 .note-title {
   fill: #2d2a4a;

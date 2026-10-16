@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Billboard from './Billboard.vue'
 import CityBackdrop from './CityBackdrop.vue'
 import { PLACES } from './places.js'
+import Icon from '../components/Icon.vue'
 
 const props = defineProps({
   // Edificio in cui ci si trova (null = in città).
@@ -125,7 +126,7 @@ const boxStyle = (b) => ({ left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`,
     </div>
 
     <Transition name="fade">
-      <button v-if="zoomed" class="close" @click="unzoom">✕ Torna in città</button>
+      <button v-if="zoomed" class="close" @click="unzoom"><Icon name="close" /> Torna in città</button>
     </Transition>
   </div>
 </template>

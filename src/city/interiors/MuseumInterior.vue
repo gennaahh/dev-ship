@@ -17,6 +17,7 @@ import TrophyCase from '../museum/TrophyCase.vue'
 import TrophyShelf from '../museum/TrophyShelf.vue'
 import SpeechBubble from '../SpeechBubble.vue'
 import InteriorLayout from './InteriorLayout.vue'
+import Icon from '../../components/Icon.vue'
 
 defineProps({ place: { type: Object, required: true } })
 defineEmits(['leave'])
@@ -225,8 +226,8 @@ const status = computed(() => {
     <div v-if="!zoomed" class="top">
       <div class="status" role="status">{{ status }}</div>
       <div class="quick">
-        <button @click="zoomed = 'album'">🖼 Albo dei capitani</button>
-        <button @click="zoomed = 'trophies'">🏆 Trofei</button>
+        <button @click="zoomed = 'album'"><Icon name="frame" /> Albo dei capitani</button>
+        <button @click="zoomed = 'trophies'"><Icon name="trophy" /> Trofei</button>
       </div>
     </div>
 

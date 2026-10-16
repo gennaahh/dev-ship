@@ -213,7 +213,7 @@ function sit(e) {
         </g>
       </g>
       <g v-if="phase === 'escaped' && !angler.say && !angler.typing" :transform="bubbleAt">
-        <SpeechBubble text="Scappato! 😩" />
+        <SpeechBubble text="Scappato!" />
       </g>
       <g v-if="phase === 'caught'" :key="`label-${kg}`" :transform="`translate(${geo.hang.x} ${geo.hang.y - 120})`" class="catch-label">
         <text v-if="big" class="wow" y="-76" text-anchor="middle">{{ kg >= 15 ? 'LEGGENDARIO!' : 'ENORME!' }}</text>

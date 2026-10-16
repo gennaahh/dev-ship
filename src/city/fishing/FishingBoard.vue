@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { formatKg, speciesFor } from './lake.js'
+import Icon from '../../components/Icon.vue'
 
 // Il cartellone della classifica, in alto a sinistra nella zona di pesca (dentro l'<svg>,
 // in coordinate della scena). Alterna da solo oggi, settimana, sempre e gli ultimi pesci presi;
@@ -75,7 +76,8 @@ const TAB_W = [62, 104, 76, 70]
       <rect x="94" y="78" width="342" height="208" rx="8" fill="#1f2a5c" />
     </g>
 
-    <text x="265" y="106" text-anchor="middle" class="title">{{ recent ? '🎣 Ultimi pesci presi' : '🎣 Classifica della pesca' }}</text>
+    <Icon name="rod" :x="104" :y="87" :size="24" ink="#fff8e6" />
+    <text x="265" y="106" text-anchor="middle" class="title">{{ recent ? 'Ultimi pesci presi' : 'Classifica della pesca' }}</text>
 
     <!-- Schede: oggi, settimana, sempre, ultime catture -->
     <g v-for="(t, i) in TABS" :key="t.id">
@@ -99,7 +101,7 @@ const TAB_W = [62, 104, 76, 70]
         <circle cx="118" cy="-6" r="9" :fill="MEDALS[i] ?? 'rgba(255,255,255,0.15)'" stroke="#2d2a4a" stroke-width="2.5" />
         <text x="118" y="-1" text-anchor="middle" class="rank">{{ i + 1 }}</text>
         <text x="134" y="0" class="name">{{ short(r.name) }}</text>
-        <text x="330" y="0" text-anchor="end" class="meta">🐟{{ r.fish }} · {{ formatKg(r.biggestKg) }}</text>
+        <text x="330" y="0" text-anchor="end" class="meta">{{ r.fish }} {{ r.fish === 1 ? 'pesce' : 'pesci' }} · {{ formatKg(r.biggestKg) }}</text>
         <text x="420" y="0" text-anchor="end" class="points">{{ r.points }}</text>
         </g>
       </g>

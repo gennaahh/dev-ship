@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useTrade } from '../composables/useTrade.js'
+import Icon from './Icon.vue'
 
 // Il menu del tasto destro su un altro giocatore, dove si è cliccato (vedi useTrade().menu).
 // Per ora una voce sola: chiedergli uno scambio. Si chiude cliccando fuori o con Esc.
@@ -36,7 +37,7 @@ onUnmounted(() => {
 <template>
   <div ref="el" class="player-menu" role="menu" :aria-label="trade.menu.value.name" :style="style" @contextmenu.prevent>
     <p class="who">{{ trade.menu.value.name }}</p>
-    <button role="menuitem" @click="trade.request(trade.menu.value.id)">🤝 Richiedi scambio</button>
+    <button role="menuitem" @click="trade.request(trade.menu.value.id)"><Icon name="trade" /> Richiedi scambio</button>
   </div>
 </template>
 

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import CaptainPortrait from './CaptainPortrait.vue'
 import { weekLabel } from './museum.js'
+import Icon from '../../components/Icon.vue'
 
 // L'albo dei capitani visto da vicino, sopra la scena del museo (che ci ha zoomato sopra): tutti
 // i quadri, dal più recente, ognuno con la settimana e il podio coi punti. close: ci si allontana
@@ -14,13 +15,12 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const weeks = computed(() => props.album?.weeks ?? [])
-const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' }
 </script>
 
 <template>
   <section class="album" aria-labelledby="album-title" @click.stop>
     <header>
-      <button class="close" aria-label="Allontanati dall'albo" @click="emit('close')">← Torna alla sala</button>
+      <button class="close" aria-label="Allontanati dall'albo" @click="emit('close')"><Icon name="arrow-left" /> Torna alla sala</button>
       <h2 id="album-title">Albo dei capitani</h2>
       <span v-if="album?.demo" class="demo">DEMO</span>
     </header>
@@ -35,12 +35,12 @@ const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' }
         <h3>Settimana del {{ weekLabel(w.weekStart) }}</h3>
         <ol class="podium">
           <li v-for="p in w.podium" :key="p.rank" :class="`rank-${p.rank}`">
-            <span class="medal" aria-hidden="true">{{ MEDALS[p.rank] }}</span>
+            <Icon :name="`medal-${p.rank}`" />
             <span class="name">{{ p.name }}</span>
             <span class="pts">{{ p.points }} pt</span>
           </li>
         </ol>
-        <p v-if="w.wins > 1" class="wins">★ {{ w.wins }}ª vittoria di {{ w.podium[0].name }}</p>
+        <p v-if="w.wins > 1" class="wins"><Icon name="star" /> {{ w.wins }}ª vittoria di {{ w.podium[0].name }}</p>
       </li>
     </ul>
   </section>
@@ -48,6 +48,9 @@ const MEDALS = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
 <style scoped>
 .album {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #e8a31a;
+  --scroll-track: #e2d4b0;
   position: absolute;
   top: 84px;
   left: 50%;

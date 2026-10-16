@@ -4,6 +4,7 @@ import { GAMES } from '@dev-city/shared/score'
 import { useLeaderboard } from '../composables/useLeaderboard.js'
 import Avatar from './Avatar.vue'
 import { lookOf } from './avatar.js'
+import Icon from '../components/Icon.vue'
 
 // La classifica della città sul cartellone: i punti di tutti i giochi della settimana (da
 // lunedì), sommati. Sul podio i primi tre col loro look, sotto i primi sette coi punti gioco per
@@ -24,7 +25,7 @@ const message = computed(() => {
 <template>
   <div class="board">
     <header>
-      <h2>🏆 Classifica della settimana</h2>
+      <h2><Icon name="trophy" ink="#fff8e6" /> Classifica della settimana</h2>
       <span v-if="board?.demo" class="demo">DEMO</span>
       <span v-else class="sub">tutti i giochi · da lunedì</span>
     </header>
@@ -34,7 +35,7 @@ const message = computed(() => {
       <div class="podium">
         <div v-for="p in podium" :key="p.name" class="step" :class="`rank-${p.rank}`">
           <div class="avatar">
-            <span v-if="p.rank === 1" class="crown">👑</span>
+            <Icon v-if="p.rank === 1" class="crown" name="crown" ink="#fff8e6" />
             <svg viewBox="-62 -140 124 150" aria-hidden="true"><Avatar :look="p.look" /></svg>
           </div>
           <div class="pname">{{ p.name }}</div>
@@ -49,7 +50,7 @@ const message = computed(() => {
         <li class="list-head">
           <span />
           <span />
-          <span v-for="g in GAMES" :key="g.id" :title="g.name">{{ g.icon }}</span>
+          <span v-for="g in GAMES" :key="g.id" :title="g.name"><Icon :name="g.icon" ink="#fff8e6" /></span>
           <span>Punti</span>
         </li>
         <li v-for="(p, i) in players" :key="p.name" class="row" :style="{ animationDelay: `${i * 0.08}s` }">
@@ -142,8 +143,8 @@ h2 {
 .crown {
   position: absolute;
   z-index: 1;
-  top: -54px;
-  font-size: 48px;
+  top: -56px;
+  font-size: 46px;
   animation: bob 1.6s ease-in-out infinite;
 }
 @keyframes bob {

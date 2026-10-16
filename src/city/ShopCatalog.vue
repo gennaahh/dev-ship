@@ -4,6 +4,7 @@ import { useInventory } from '../composables/useInventory.js'
 import { BACKEND_ENABLED } from '../config.js'
 import Avatar from './Avatar.vue'
 import { HATS, lookOf } from './avatar.js'
+import Icon from '../components/Icon.vue'
 
 // Catalogo dello shop della piazza: si provano i cappelli sull'anteprima e, da loggati, si
 // comprano con le monete d'oro e si indossano. I colori sono gratis e si scelgono dalla
@@ -53,9 +54,9 @@ function onKeydown(e) {
   <dialog ref="dialog" class="shop" aria-labelledby="shop-title" @keydown="onKeydown" @click.self="emit('close')" @close="emit('close')">
     <header>
       <h2 id="shop-title">Shop della piazza</h2>
-      <span v-if="canBuy" class="gold" title="Monete d'oro">🪙 {{ gold }}</span>
+      <span v-if="canBuy" class="gold" title="Monete d'oro"><Icon name="coin" /> {{ gold }}</span>
       <span v-else class="soon">SOLO PROVA</span>
-      <button class="x" aria-label="Chiudi lo shop" @click="emit('close')">✕</button>
+      <button class="x" aria-label="Chiudi lo shop" @click="emit('close')"><Icon name="close" /></button>
     </header>
 
     <div class="body">
@@ -68,8 +69,8 @@ function onKeydown(e) {
             <li>
               <span>{{ change.label }}</span>
               <button v-if="change.owned" class="buy" :disabled="busy" @click="apply(change)">Indossa</button>
-              <button v-else-if="gold >= change.item.price" class="buy" :disabled="busy" @click="apply(change)">Compra · 🪙 {{ change.item.price }}</button>
-              <span v-else class="short">Mancano 🪙 {{ change.item.price - gold }}</span>
+              <button v-else-if="gold >= change.item.price" class="buy" :disabled="busy" @click="apply(change)">Compra · <Icon name="coin" /> {{ change.item.price }}</button>
+              <span v-else class="short">Mancano <Icon name="coin" /> {{ change.item.price - gold }}</span>
             </li>
           </ul>
           <p v-else>È il tuo look. Scegli un cappello per provarlo: il colore lo cambi gratis dalla finestra del personaggio (C).</p>
@@ -88,8 +89,8 @@ function onKeydown(e) {
             </svg>
             <span v-if="isNew(h)" class="new">NOVITÀ</span>
             <span class="hat-name">{{ h.name }}</span>
-            <span v-if="canBuy && inventory.owns(h)" class="price owned">{{ equipment.hat === h.id ? 'Indossato ✓' : 'Tuo ✓' }}</span>
-            <span v-else class="price">🪙 {{ h.price }}</span>
+            <span v-if="canBuy && inventory.owns(h)" class="price owned">{{ equipment.hat === h.id ? 'Indossato' : 'Tuo' }} <Icon name="check" /></span>
+            <span v-else class="price"><Icon name="coin" /> {{ h.price }}</span>
           </button>
         </div>
       </div>
@@ -99,6 +100,9 @@ function onKeydown(e) {
 
 <style scoped>
 .shop {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #f48fb1;
+  --scroll-track: #fbe3ec;
   width: min(760px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   box-sizing: border-box;

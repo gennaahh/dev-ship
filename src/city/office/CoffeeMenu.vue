@@ -8,6 +8,7 @@ import { useInventory } from '../../composables/useInventory.js'
 import { BACKEND_ENABLED } from '../../config.js'
 import CoffeeCup from './CoffeeCup.vue'
 import { activeCoffee, coffeeEffects, durationText, leftText } from './coffee.js'
+import Icon from '../../components/Icon.vue'
 
 // Il menu della macchinetta del caffè: i caffè con prezzo, durata ed effetti, e quello che si ha
 // in circolo. Un caffè alla volta: berne un altro sostituisce quello di prima. Per il ginseng si
@@ -41,17 +42,16 @@ const gear = computed(() => {
   const worn = inventory.equipment.value
   return { weapon: inventory.count(worn.weapon) ? worn.weapon : null, armor: inventory.count(worn.armor) ? worn.armor : null }
 })
-// Un caffè per il dungeon col proprio equipaggiamento: "Spada di legno: 12–18 → 15–21 danni, 100 → 120 HP".
+// Un caffè per il dungeon col proprio equipaggiamento: "Spada di legno: 12–18 → 15–21 danni,
+// 100 → 120 HP" (le frecce sono icone).
 function onGear(c) {
   const before = statsOf(gear.value)
   const after = statsOf({ ...gear.value, coffee: c.id })
-  const name = weaponOf(gear.value.weapon)?.name ?? 'Spada di legno'
-  return `${name}: ${before.damage[0]}–${before.damage[1]} → ${after.damage[0]}–${after.damage[1]} danni, ${before.maxHp} → ${after.maxHp} HP`
-}
-function label(c) {
-  if (!canDrink.value) return `${c.price} 🪙`
-  if (gold.value < c.price) return `${c.price} 🪙 · non bastano`
-  return `Bevi · ${c.price} 🪙`
+  return {
+    name: weaponOf(gear.value.weapon)?.name ?? 'Spada di legno',
+    damage: [`${before.damage[0]}–${before.damage[1]}`, `${after.damage[0]}–${after.damage[1]}`],
+    hp: [before.maxHp, after.maxHp],
+  }
 }
 
 const dialog = ref(null)
@@ -74,9 +74,9 @@ function onKeydown(e) {
 <template>
   <dialog ref="dialog" class="coffee" aria-labelledby="coffee-title" @keydown="onKeydown" @click.self="emit('close')" @close="emit('close')">
     <header>
-      <h2 id="coffee-title">☕ Macchinetta del caffè</h2>
-      <span v-if="canDrink" class="purse" title="Le tue monete">🪙 {{ gold }}</span>
-      <button class="x" aria-label="Chiudi il menu" @click="emit('close')">✕</button>
+      <h2 id="coffee-title"><Icon name="coffee" /> Macchinetta del caffè</h2>
+      <span v-if="canDrink" class="purse" title="Le tue monete"><Icon name="coin" /> {{ gold }}</span>
+      <button class="x" aria-label="Chiudi il menu" @click="emit('close')"><Icon name="close" /></button>
     </header>
 
     <div v-if="active" class="active" aria-live="polite">
@@ -97,11 +97,15 @@ function onKeydown(e) {
           <h3>{{ c.name }} <small>{{ durationText(c.minutes) }}</small></h3>
           <p class="blurb">{{ c.blurb }}</p>
           <ul class="effects">
-            <li v-for="e in coffeeEffects(c)" :key="e.text" :class="e.tone">{{ e.icon }} {{ e.text }}</li>
+            <li v-for="e in coffeeEffects(c)" :key="e.text" :class="e.tone"><Icon :name="e.icon" /> {{ e.text }}</li>
           </ul>
-          <p v-if="c.dungeon" class="on-gear">{{ onGear(c) }}</p>
+          <p v-if="c.dungeon" class="on-gear">
+            {{ onGear(c).name }}: {{ onGear(c).damage[0] }} <Icon name="arrow-right" /> {{ onGear(c).damage[1] }} danni, {{ onGear(c).hp[0] }} <Icon name="arrow-right" /> {{ onGear(c).hp[1] }} HP
+          </p>
         </div>
-        <button class="buy" :disabled="!canDrink || busy || gold < c.price" @click="drink(c)">{{ label(c) }}</button>
+        <button class="buy" :disabled="!canDrink || busy || gold < c.price" @click="drink(c)">
+          <template v-if="canDrink && gold >= c.price">Bevi · </template>{{ c.price }} <Icon name="coin" /><template v-if="canDrink && gold < c.price"> · non bastano</template>
+        </button>
       </li>
     </ul>
     <p v-if="active && canDrink" class="note small">Bevendone un altro, {{ active.name.toLowerCase() }} finisce subito: vale solo l'ultimo. Lago e miniera ne tengono conto dalla prossima attesa.</p>
@@ -110,6 +114,9 @@ function onKeydown(e) {
 
 <style scoped>
 .coffee {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #e0a46a;
+  --scroll-track: #f3e6d4;
   width: min(760px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   box-sizing: border-box;

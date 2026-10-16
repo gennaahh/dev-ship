@@ -8,6 +8,8 @@ export const CHANGELOG = [
   {
     date: '2026-10-16',
     items: [
+      { tag: 'new', text: 'Le barre di scorrimento sono disegnate come il resto della città, coi colori di dove stanno: arancioni nell\'inventario, viola nel personaggio, gialle in chat e sul cartellone, chiare sul sughero della bacheca e così via. Anche su Safari e Firefox.' },
+      { tag: 'fix', text: 'Niente più emoji: monete, cuori, spade, scudi, medaglie, frecce e tutti gli altri simboli sono icone disegnate apposta, uguali su ogni browser e sistema.' },
       { tag: 'new', text: 'Il cartellino BOZZA sui pannelli dei luoghi non c\'è più: ormai sono tutti aperti.' },
       { tag: 'new', backend: true, text: 'Il museo è aperto! Ci si cammina e si chiacchiera come in piazza. Sulla parete c\'è l\'albo dei capitani: ogni lunedì il podio della settimana prima diventa un quadro, col primo al timone della dev-ship e gli altri due ai lati, vestiti com\'erano quella settimana. Gli ultimi tre sono appesi con la targhetta; un clic e ci si avvicina per vederli tutti. Le stelle sulla cornice sono le vittorie del capitano.' },
       { tag: 'new', backend: true, text: 'Al museo c\'è anche la bacheca dei trofei: per ora è vuota, aspetta i trofei per le imprese della città.' },

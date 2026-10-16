@@ -35,7 +35,7 @@ const label = computed(() => formatWeekMinute(props.minutes, props.live))
         <div class="time">{{ label }}</div>
         <div class="status">{{ status }}</div>
       </div>
-      <span v-if="live" class="badge">● Live</span>
+      <span v-if="live" class="badge"><span class="live-dot" aria-hidden="true" /> Live</span>
       <button v-else class="live-btn" @click="emit('go-live')">Torna all'ora attuale</button>
     </div>
 
@@ -107,6 +107,14 @@ const label = computed(() => formatWeekMinute(props.minutes, props.live))
   font-size: 0.75rem;
   font-weight: 600;
   color: #c0392b;
+}
+.live-dot {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 0.05em;
 }
 .live-btn {
   flex-shrink: 0;

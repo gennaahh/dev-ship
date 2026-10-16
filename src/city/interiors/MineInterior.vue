@@ -18,6 +18,7 @@ import Miner from '../mine/Miner.vue'
 import { SCALE } from '../mine/mine.js'
 import SpeechBubble from '../SpeechBubble.vue'
 import InteriorLayout from './InteriorLayout.vue'
+import Icon from '../../components/Icon.vue'
 
 defineProps({ place: { type: Object, required: true } })
 defineEmits(['leave'])
@@ -261,8 +262,8 @@ const status = computed(() => {
   const m = mySpot.value
   if (m) {
     const found = m.phase === 'found' ? mineral(m.found) : null
-    if (found) return { text: `Trovato: ${found.name}! +${found.price} 🪙`, tone: isBigFind(found.id) ? 'big' : 'found', stand: true }
-    return { text: `⛏ Scavi da ${clockText(now.value - m.since)} · ${plural(m.stones, 'pietra', 'pietre')} · ${plural(m.finds, 'scoperta', 'scoperte')}`, stand: true }
+    if (found) return { icon: 'gem', text: `Trovato: ${found.name}! +${found.price}`, after: 'coin', tone: isBigFind(found.id) ? 'big' : 'found', stand: true }
+    return { icon: 'pickaxe', text: `Scavi da ${clockText(now.value - m.since)} · ${plural(m.stones, 'pietra', 'pietre')} · ${plural(m.finds, 'scoperta', 'scoperte')}`, stand: true }
   }
   if (spotTaken.value) return { text: 'Qualcuno è arrivato prima di te: scegli un altro filone', tone: 'taken' }
   if (goingSpot.value !== null) return { text: 'Vai al filone…' }
@@ -408,7 +409,7 @@ const lanterns = [posts[1], posts[3], posts[5], posts[7]]
     </svg>
 
     <div class="status" :class="status.tone" role="status">
-      <span>{{ status.text }}</span>
+      <span><Icon v-if="status.icon" :name="status.icon" /> {{ status.text }} <Icon v-if="status.after" :name="status.after" /></span>
       <button v-if="status.stand" class="stand" @click="mine.stand()">Smetti</button>
     </div>
 

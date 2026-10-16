@@ -4,6 +4,7 @@ import { authClient } from '../auth.js'
 import { useInventory } from '../composables/useInventory.js'
 import { useOffice } from '../composables/useOffice.js'
 import KeyCap from './KeyCap.vue'
+import Icon from './Icon.vue'
 
 // In alto a destra, da loggati e con una missione dell'ufficio in corso: la cartellina che apre
 // la finestra della missione (anche col tasto M). Il segno di spunta dice che nell'inventario c'è
@@ -27,7 +28,7 @@ const office = useOffice()
       <rect x="8" y="1.5" width="8" height="4" rx="1.5" fill="#b8c2d4" />
       <path d="M 7.5 10 H 16.5 M 7.5 14 H 16.5 M 7.5 18 H 13" fill="none" stroke-width="1.8" />
     </svg>
-    <span v-if="office.ready.value" class="ready" aria-hidden="true">✓</span>
+    <span v-if="office.ready.value" class="ready" aria-hidden="true"><Icon name="check" /></span>
     <KeyCap letter="M" />
   </button>
 </template>

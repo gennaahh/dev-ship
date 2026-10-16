@@ -5,13 +5,13 @@ import { coffee } from '@dev-city/shared/coffee'
 
 const percent = (v) => `${Math.round(v * 100)}%`
 
-// Gli effetti di un caffè, una voce ciascuno: { icon, text, tone }.
+// Gli effetti di un caffè, una voce ciascuno: { icon (il nome per Icon), text, tone }.
 export function coffeeEffects(c) {
   const list = []
-  if (c.speed) list.push({ icon: '⏱', text: `−${percent(c.speed)} attesa al lago e in miniera`, tone: 'speed' })
-  if (c.luck) list.push({ icon: '🍀', text: `+${percent(c.luck)} pesci speciali e scoperte rare`, tone: 'luck' })
-  if (c.dungeon) list.push({ icon: '⚔', text: `+${c.dungeon.damage} danni a colpo e +${c.dungeon.hp} HP nella prossima run del dungeon`, tone: 'dungeon' })
-  if (!list.length) list.push({ icon: '☁', text: 'Nessun effetto: solo il piacere della tazza', tone: 'none' })
+  if (c.speed) list.push({ icon: 'timer', text: `−${percent(c.speed)} attesa al lago e in miniera`, tone: 'speed' })
+  if (c.luck) list.push({ icon: 'clover', text: `+${percent(c.luck)} pesci speciali e scoperte rare`, tone: 'luck' })
+  if (c.dungeon) list.push({ icon: 'swords', text: `+${c.dungeon.damage} danni a colpo e +${c.dungeon.hp} HP nella prossima run del dungeon`, tone: 'dungeon' })
+  if (!list.length) list.push({ icon: 'cloud', text: 'Nessun effetto: solo il piacere della tazza', tone: 'none' })
   return list
 }
 

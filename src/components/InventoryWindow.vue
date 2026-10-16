@@ -10,6 +10,8 @@ import { formatKg } from '../city/fishing/lake.js'
 import { toolStat } from '../city/mine/tools.js'
 import { useInventory } from '../composables/useInventory.js'
 import SoupBowl from './SoupBowl.vue'
+import Icon from './Icon.vue'
+import IconText from './IconText.vue'
 
 // L'inventario del giocatore: le monete d'oro, i pesci presi, da vendere, quello che serve per il
 // dungeon (zuppe dal crafting, tasto R, e ticket dalla pesca), i materiali portati via dal
@@ -54,9 +56,10 @@ function sellAllMined() {
 
 // Armi, armature, canne e picconi forgiati, con le loro statistiche e se li si ha addosso.
 const gear = computed(() => [...weapons.value, ...armors.value, ...rods.value, ...pickaxes.value])
+// Coi pezzi per IconText.
 function gearStat(g) {
-  if (g.slot === 'weapon') return `⚔ ${g.damage[0]}–${g.damage[1]} danni`
-  if (g.slot === 'armor') return `❤ +${g.hp} HP · 🛡 −${Math.round(g.defense * 100)}%`
+  if (g.slot === 'weapon') return [{ icon: 'swords', text: `${g.damage[0]}–${g.damage[1]} danni` }]
+  if (g.slot === 'armor') return [{ icon: 'heart', text: `+${g.hp} HP` }, { icon: 'shield', text: `−${Math.round(g.defense * 100)}%` }]
   return toolStat(g)
 }
 const WORN = { weapon: 'Impugnata', armor: 'Indossata', rod: 'In mano', pickaxe: 'In mano' }
@@ -82,9 +85,9 @@ function onKeydown(e) {
   <dialog ref="dialog" class="inventory" aria-labelledby="inventory-title" @keydown="onKeydown" @click.self="emit('close')" @close="emit('close')">
     <header>
       <h2 id="inventory-title">Inventario</h2>
-      <span class="gold" title="Monete d'oro">🪙 {{ gold }}</span>
+      <span class="gold" title="Monete d'oro"><Icon name="coin" /> {{ gold }}</span>
       <kbd title="Si apre e chiude anche col tasto I">I</kbd>
-      <button class="x" aria-label="Chiudi l'inventario" @click="emit('close')">✕</button>
+      <button class="x" aria-label="Chiudi l'inventario" @click="emit('close')"><Icon name="close" /></button>
     </header>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -94,7 +97,7 @@ function onKeydown(e) {
         <div class="section-head">
           <h3>Pesci <span class="count">{{ fish.length }}</span></h3>
           <button v-if="fish.length > 1" class="small sell-all" :class="{ confirming }" :disabled="busy" @click="sellAll">
-            {{ confirming ? 'Sicuro?' : 'Vendi tutti' }} · 🪙 {{ total }}
+            {{ confirming ? 'Sicuro?' : 'Vendi tutti' }} · <Icon name="coin" /> {{ total }}
           </button>
         </div>
         <p v-if="!fish.length" class="empty">Nessun pesce: siediti a una sedia della zona di pesca e aspetta che abbocchi.</p>
@@ -106,7 +109,7 @@ function onKeydown(e) {
             <span class="item-name">{{ f.species.name }}</span>
             <span class="weight">{{ formatKg(f.weightKg) }}</span>
             <span v-if="f.weightKg >= SPECIAL_KG" class="special" :title="`Pesce speciale: vale ${SPECIAL_MULTIPLIER} volte tanto`">Speciale ×{{ SPECIAL_MULTIPLIER }}</span>
-            <button class="small sell" :disabled="busy" @click="inventory.sell([f.id])">Vendi · 🪙 {{ f.price }}</button>
+            <button class="small sell" :disabled="busy" @click="inventory.sell([f.id])">Vendi · <Icon name="coin" /> {{ f.price }}</button>
           </li>
         </ul>
       </section>
@@ -127,7 +130,7 @@ function onKeydown(e) {
             <svg viewBox="-56 -56 112 104" aria-hidden="true"><SoupBowl :steam="soups > 0" /></svg>
             <span class="item-name">{{ soup.name }}</span>
             <span class="weight">× {{ soups }}</span>
-            <span class="heal" :title="`Nel dungeon si beve da sola sotto i ${SOUP_BELOW} HP`">❤ Cura {{ soup.heal }} HP</span>
+            <span class="heal" :title="`Nel dungeon si beve da sola sotto i ${SOUP_BELOW} HP`"><Icon name="heart" /> Cura {{ soup.heal }} HP</span>
           </li>
         </ul>
         <p v-if="!tickets" class="empty">I ticket si ripescano al lago: una volta su 15 col pesce sale una bottiglia.</p>
@@ -150,17 +153,17 @@ function onKeydown(e) {
         <div class="section-head">
           <h3>Miniera</h3>
           <button v-if="mined.length" class="small sell-all" :class="{ confirming: confirmingMined }" :disabled="busy" @click="sellAllMined">
-            {{ confirmingMined ? 'Sicuro?' : 'Vendi tutto' }} · 🪙 {{ minedTotal }}
+            {{ confirmingMined ? 'Sicuro?' : 'Vendi tutto' }} · <Icon name="coin" /> {{ minedTotal }}
           </button>
         </div>
         <ul class="grid materials">
-          <li v-for="m in minerals" :key="m.id" class="card material" :class="[m.rarity, { none: !m.quantity }]" :title="`${RARITY_NAMES[m.rarity]} · 🪙 ${m.price} l'uno`">
+          <li v-for="m in minerals" :key="m.id" class="card material" :class="[m.rarity, { none: !m.quantity }]" :title="`${RARITY_NAMES[m.rarity]} · ${m.price} ${m.price === 1 ? 'moneta' : 'monete'} l'uno`">
             <ItemIcon :id="m.id" />
             <span class="item-name">{{ m.name }}</span>
-            <span class="weight">× {{ m.quantity }} · 🪙 {{ m.price }}</span>
+            <span class="weight">× {{ m.quantity }} · <Icon name="coin" /> {{ m.price }}</span>
             <span v-if="m.quantity" class="sell-row">
               <button class="small sell" :disabled="busy" :title="`Vendi 1 × ${m.name} per ${m.price} monete`" @click="inventory.sellItems({ [m.id]: 1 })">Vendi 1</button>
-              <button v-if="m.quantity > 1" class="small sell" :disabled="busy" :title="`Vendi tutti per ${m.price * m.quantity} monete`" @click="inventory.sellItems({ [m.id]: m.quantity })">Tutti · 🪙 {{ m.price * m.quantity }}</button>
+              <button v-if="m.quantity > 1" class="small sell" :disabled="busy" :title="`Vendi tutti per ${m.price * m.quantity} monete`" @click="inventory.sellItems({ [m.id]: m.quantity })">Tutti · <Icon name="coin" /> {{ m.price * m.quantity }}</button>
             </span>
           </li>
         </ul>
@@ -177,8 +180,8 @@ function onKeydown(e) {
           <li v-for="g in gear" :key="g.id" class="card" :class="{ worn: equipment[g.slot] === g.id }">
             <ItemIcon :id="g.id" />
             <span class="item-name">{{ g.name }}</span>
-            <span class="weight">{{ gearStat(g) }}<template v-if="g.quantity > 1"> · × {{ g.quantity }}</template></span>
-            <span v-if="equipment[g.slot] === g.id" class="tag">{{ WORN[g.slot] }} ✓</span>
+            <span class="weight"><IconText :parts="gearStat(g)" /><template v-if="g.quantity > 1"> · × {{ g.quantity }}</template></span>
+            <span v-if="equipment[g.slot] === g.id" class="tag">{{ WORN[g.slot] }} <Icon name="check" /></span>
           </li>
         </ul>
       </section>
@@ -190,6 +193,9 @@ function onKeydown(e) {
 
 <style scoped>
 .inventory {
+  /* Le barre di scorrimento (App.vue) coi colori della finestra. */
+  --scroll-thumb: #ff9a4a;
+  --scroll-track: #f1e7d6;
   width: min(700px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   box-sizing: border-box;

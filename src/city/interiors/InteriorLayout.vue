@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import Icon from '../../components/Icon.vue'
 
 // Cornice comune degli interni: la scena disegnata riempie lo schermo, sopra c'è il cartello
 // col nome del luogo, il pulsante per tornare in città e com'è fatto il luogo.
@@ -80,7 +81,7 @@ onUnmounted(() => {
       <slot />
     </div>
 
-    <button class="back" aria-label="Torna in città" @click="emit('leave')">←<span class="back-text"> Torna in città</span></button>
+    <button class="back" aria-label="Torna in città" @click="emit('leave')"><Icon name="arrow-left" /><span class="back-text"> Torna in città</span></button>
 
     <div
       class="card"

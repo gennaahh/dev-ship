@@ -15,6 +15,7 @@ import FishingBoard from '../fishing/FishingBoard.vue'
 import { BIG_KG, BOTTLE_CHANCE, clampToLakeside, formatKg, LAKE, pointsFor, rollCatch, SCALE, SEAT_SPOTS, SHORE, walkLakeside } from '../fishing/lake.js'
 import SpeechBubble from '../SpeechBubble.vue'
 import InteriorLayout from './InteriorLayout.vue'
+import Icon from '../../components/Icon.vue'
 
 defineProps({ place: { type: Object, required: true } })
 defineEmits(['leave'])
@@ -259,9 +260,9 @@ const status = computed(() => {
   const m = mine.value
   if (m) {
     if (m.phase === 'bite') return { text: 'Ha abboccato!!', tone: 'bite', stand: true }
-    if (m.phase === 'caught') return { text: `Preso! ${formatKg(m.weight)} · +${pointsFor(m.weight)} pt${m.bottle ? ' · e una bottiglia col ticket del dungeon! 🍾' : ''}`, tone: 'caught', stand: true }
+    if (m.phase === 'caught') return { icon: m.bottle ? 'bottle' : 'fish', text: `Preso! ${formatKg(m.weight)} · +${pointsFor(m.weight)} pt${m.bottle ? ' · e una bottiglia col ticket del dungeon!' : ''}`, tone: 'caught', stand: true }
     if (m.phase === 'escaped') return { text: 'Scappato… la lenza torna in acqua', tone: 'escaped', stand: true }
-    return { text: `🎣 In pesca da ${clockText(now.value - m.since)} · prima o poi abbocca`, stand: true }
+    return { icon: 'rod', text: `In pesca da ${clockText(now.value - m.since)} · prima o poi abbocca`, stand: true }
   }
   if (seatTaken.value) return { text: 'Qualcuno è arrivato prima di te: scegli un\'altra sedia', tone: 'escaped' }
   if (goingSeat.value !== null) return { text: 'Vai alla sedia…' }
@@ -455,7 +456,7 @@ const farTrees = Array.from({ length: 22 }, (_, i) => ({ x: i * 78 - 20, r: 26 +
     </svg>
 
     <div class="status" :class="status.tone" role="status">
-      <span>{{ status.text }}</span>
+      <span><Icon v-if="status.icon" :name="status.icon" /> {{ status.text }}</span>
       <button v-if="status.stand" class="stand" @click="lake.stand()">Alzati</button>
     </div>
 

@@ -1,6 +1,7 @@
 <script setup>
 import { itemName } from '@dev-city/shared/catalog'
 import ItemIcon from '../../components/ItemIcon.vue'
+import Icon from '../../components/Icon.vue'
 
 // Il premio di una missione: le monete e, se ci sono, gli oggetti (il ticket del dungeon).
 defineProps({
@@ -11,7 +12,7 @@ defineProps({
 
 <template>
   <span class="reward">
-    <span class="gold" :title="`${reward.gold} monete d'oro`">🪙 {{ reward.gold }}</span>
+    <span class="gold" :title="`${reward.gold} monete d'oro`"><Icon name="coin" /> {{ reward.gold }}</span>
     <span v-for="(n, id) in reward.items" :key="id" class="item" :title="`${itemName(id)} × ${n}`">
       <ItemIcon :id="id" />
       <template v-if="n > 1">× {{ n }}</template>
