@@ -2,10 +2,10 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 // Cornice comune degli interni: la scena disegnata riempie lo schermo, sopra c'è il cartello
-// col nome del luogo, il pulsante per tornare in città e le idee per quando sarà giocabile.
+// col nome del luogo, il pulsante per tornare in città e com'è fatto il luogo.
 const props = defineProps({
   place: { type: Object, required: true },
-  // Idee di cosa ci sarà dentro: è ancora una bozza.
+  // Cosa c'è dentro e come si gioca, una riga per voce.
   plans: { type: Array, default: () => [] },
   // Colore del pannello, intonato all'ambiente.
   tint: { type: String, default: '#2d2a4a' },
@@ -89,7 +89,6 @@ onUnmounted(() => {
       @pointerenter="onEnter"
       @pointerleave="onLeave"
     >
-      <span class="draft">BOZZA</span>
       <button
         class="fold"
         :aria-expanded="open"
@@ -233,18 +232,6 @@ onUnmounted(() => {
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
-}
-.draft {
-  position: absolute;
-  top: -18px;
-  right: 18px;
-  padding: 4px 12px;
-  border: 4px solid #2d2a4a;
-  border-radius: 10px;
-  background: #ff7a59;
-  color: #fff8e6;
-  font-size: 16px;
-  rotate: 6deg;
 }
 h1 {
   margin: 0;

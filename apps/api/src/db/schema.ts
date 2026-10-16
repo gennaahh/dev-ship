@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { Difficulty, Reward } from '@dev-city/shared/office'
 import type { Game } from '@dev-city/shared/score'
-import { customType, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
+import { customType, date, index, integer, pgTable, primaryKey, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { user } from './auth-schema.ts'
 
 // Una colonna jsonb. Quella di drizzle trasforma l'oggetto in testo, e col driver bun-sql il testo
@@ -173,4 +173,24 @@ export const playerScore = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('player_score_created_at_idx').on(table.createdAt), index('player_score_user_id_idx').on(table.userId)],
+)
+
+// L'albo dei capitani del museo: il podio di ogni settimana finita (da lunedì, ora italiana), un
+// quadro per settimana con tre righe, dal primo al terzo. Nome, punti e look sono quelli del
+// momento in cui il quadro viene appeso (il primo lunedì in cui qualcuno guarda l'albo), così il
+// ritratto non cambia se poi ci si cambia il cappello. Lo scrive l'API (museum.ts) da player_score;
+// se il giocatore se ne va il quadro resta, col suo nome.
+export const captainWeek = pgTable(
+  'captain_week',
+  {
+    weekStart: date({ mode: 'string' }).notNull(),
+    rank: integer().notNull(),
+    userId: text().references(() => user.id, { onDelete: 'set null' }),
+    name: text().notNull(),
+    points: integer().notNull(),
+    hat: text(),
+    color: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.weekStart, table.rank] })],
 )

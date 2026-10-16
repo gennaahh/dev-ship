@@ -9,6 +9,7 @@ import { fishingLeaderboard } from './fishing.ts'
 import { buy, craft, equip, InventoryError, inventoryOf, runDungeon, sellFish, sellItems } from './inventory.ts'
 import { leaderboard } from './leaderboard.ts'
 import { mineBoard } from './mine.ts'
+import { captains } from './museum.ts'
 import { cancelMission, completeMission, drinkCoffee, missionOf, officeBoard, takeMission } from './office.ts'
 
 const app = new Hono<{ Variables: { userId: string } }>()
@@ -32,6 +33,8 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 // La classifica della città: i punti di tutti i giochi, della settimana e di sempre. Pubblica: la
 // mostrano il cartellone e il timone della dev-ship.
 app.get('/api/leaderboard', async (c) => c.json(await leaderboard()))
+// L'albo dei capitani del museo: il podio di ogni settimana finita, dal più recente. Pubblico.
+app.get('/api/museum/captains', async (c) => c.json(await captains()))
 // Classifica della zona di pesca (oggi, settimana, sempre) e ultime catture: pubblica, la vede
 // anche chi non è entrato.
 app.get('/api/fishing/leaderboard', async (c) => c.json(await fishingLeaderboard()))

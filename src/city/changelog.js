@@ -8,6 +8,10 @@ export const CHANGELOG = [
   {
     date: '2026-10-16',
     items: [
+      { tag: 'new', text: 'Il cartellino BOZZA sui pannelli dei luoghi non c\'è più: ormai sono tutti aperti.' },
+      { tag: 'new', backend: true, text: 'Il museo è aperto! Ci si cammina e si chiacchiera come in piazza. Sulla parete c\'è l\'albo dei capitani: ogni lunedì il podio della settimana prima diventa un quadro, col primo al timone della dev-ship e gli altri due ai lati, vestiti com\'erano quella settimana. Gli ultimi tre sono appesi con la targhetta; un clic e ci si avvicina per vederli tutti. Le stelle sulla cornice sono le vittorie del capitano.' },
+      { tag: 'new', backend: true, text: 'Al museo c\'è anche la bacheca dei trofei: per ora è vuota, aspetta i trofei per le imprese della città.' },
+      { tag: 'new', text: 'Il museo nuovo si vede anche nella demo, con l\'albo della squadra finta.' },
       { tag: 'new', backend: true, text: 'La classifica del cartellone è vera! Somma i punti di tutti i giochi della settimana (da lunedì): la pesca 10 punti per chilo, la miniera 5 per ogni moneta di quello che si stacca (anche le pietre), il dungeon 10 per ondata superata e 40 per ogni boss, le missioni dell\'ufficio 2 per moneta del premio. Un\'ora al lago o in miniera vale più o meno uguale. I punti fatti finora con pesci, scoperte e missioni ci sono già.' },
       { tag: 'new', backend: true, text: 'Sul podio del cartellone ci sono i personaggi col loro look, e nella lista i punti gioco per gioco.' },
       { tag: 'new', backend: true, text: 'I primi tre della settimana sono al timone della dev-ship: mentre la nave naviga, ogni minuto si zooma sul ponte per 15 secondi, col primo alla ruota e gli altri due ai lati.' },

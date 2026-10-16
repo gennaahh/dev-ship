@@ -42,9 +42,9 @@ function leave() {
 const fullscreen = ref(false)
 
 // Fuori dagli edifici la chat è quella della città (in alto a sinistra), dentro quella del
-// luogo (in basso a sinistra). La piazza, la zona di pesca, la miniera e l'ufficio hanno la loro:
+// luogo (in basso a sinistra). Piazza, zona di pesca, miniera, ufficio e museo hanno la loro:
 // passa dalla stanza del luogo, che mette i fumetti sui personaggi.
-const OWN_CHAT = ['piazza', 'pesca', 'miniera', 'ufficio']
+const OWN_CHAT = ['piazza', 'pesca', 'miniera', 'ufficio', 'museo']
 const chatChannel = computed(() => place.value?.id ?? 'city')
 // Col cartellone zoomato la chat della città si ripiega, per non coprirne l'angolo.
 const boardZoomed = ref(false)

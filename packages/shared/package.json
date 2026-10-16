@@ -7,8 +7,10 @@
     "./coffee": "./src/coffee.ts",
     "./dungeon": "./src/dungeon.ts",
     "./mine": "./src/mine.ts",
+    "./museum-floor": "./src/museum-floor.ts",
     "./office": "./src/office.ts",
     "./office-floor": "./src/office-floor.ts",
-    "./score": "./src/score.ts"
+    "./score": "./src/score.ts",
+    "./trophies": "./src/trophies.ts"
   }
 }
