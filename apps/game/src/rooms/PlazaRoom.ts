@@ -4,6 +4,7 @@ import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { ChatInput, cleanText, createMessage, history, RateLimit, TypingInput } from '../chat.ts'
 import { loadLook, refreshLook } from '../db.ts'
 import { clampToPlaza, plazaEntrance, walkToward } from '../movement.ts'
+import { TradeDesk } from '../trade.ts'
 import { PlazaPlayer, PlazaState } from './PlazaState.ts'
 
 const TICK_MS = 50 // 20 tick al secondo
@@ -20,6 +21,8 @@ export class PlazaRoom extends Room<{ state: PlazaState; client: Client<{ auth: 
 
   private targets = new Map<string, { x: number; y: number }>()
   private rate = new RateLimit()
+  // Gli scambi tra chi è in piazza (col tasto destro su un giocatore).
+  private trades = new TradeDesk(this, (userIds) => userIds.forEach((id) => refreshLook(this.clients, this.state.players, id)))
 
   static async onAuth(token: string) {
     if (!token) throw new ServerError(401, 'Serve il login')
@@ -52,6 +55,7 @@ export class PlazaRoom extends Room<{ state: PlazaState; client: Client<{ auth: 
       this.broadcast('chat', message)
       await history.push(this.historyKey, message)
     }),
+    ...this.trades.messages,
   }
 
   // Ogni piazza ha il suo storico, che sparisce con lei.
@@ -86,10 +90,12 @@ export class PlazaRoom extends Room<{ state: PlazaState; client: Client<{ auth: 
   onDrop(client: Client) {
     const player = this.state.players.get(client.sessionId)
     if (player) player.typing = false
+    this.trades.leave(client.sessionId)
     this.allowReconnection(client, RECONNECT_SECONDS)
   }
 
   onLeave(client: Client) {
+    this.trades.leave(client.sessionId)
     this.targets.delete(client.sessionId)
     this.rate.forget(client.sessionId)
     this.state.players.delete(client.sessionId)

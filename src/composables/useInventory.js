@@ -1,5 +1,5 @@
 import { computed, effectScope, ref, watch } from 'vue'
-import { FISH } from '@dev-city/shared/catalog'
+import { DUNGEON_TICKET, FISH, FISH_SOUP, MATERIALS } from '@dev-city/shared/catalog'
 import { authClient } from '../auth.js'
 import { API_URL, BACKEND_ENABLED } from '../config.js'
 import { speciesFor } from '../city/fishing/lake.js'
@@ -8,7 +8,8 @@ import { speciesFor } from '../city/fishing/lake.js'
 // la pagina (la finestra dell'inventario, lo shop, il proprio personaggio nei luoghi):
 // si ricarica da solo al login e si svuota al logout. Senza backend resta vuoto.
 // ready: c'è un inventario (loggati e caricato). open: la finestra aperta, 'bag' (l'inventario,
-// tasto I), 'character' (personaggio ed equipaggiamento, tasto C) o null.
+// tasto I), 'character' (personaggio ed equipaggiamento, tasto C), 'craft' (il crafting, tasto R)
+// o null.
 let store = null
 export function useInventory() {
   store ??= effectScope(true).run(createStore)
@@ -38,6 +39,27 @@ function createStore() {
     if (userId.value === forUser) data.value = json
   }
 
+  // Una run nel dungeon: l'API la gioca tutta e restituisce la run da guardare e l'inventario
+  // già aggiornato. L'inventario si tiene da parte, da mettere con apply() a fine run: monete e
+  // materiali non si vedono prima di averli visti cadere. null se va male (l'errore è in error).
+  async function runDungeon() {
+    if (busy.value) return null
+    busy.value = true
+    error.value = ''
+    const forUser = userId.value
+    try {
+      const res = await fetch(`${API_URL}/api/dungeon/run`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: '{}' })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error ?? 'L\'API non risponde.')
+      return { run: json.run, apply: () => userId.value === forUser && (data.value = json.inventory) }
+    } catch (e) {
+      error.value = e instanceof TypeError ? 'L\'API non risponde: è accesa?' : e.message
+      return null
+    } finally {
+      busy.value = false
+    }
+  }
+
   async function refresh() {
     if (!userId.value) return
     try {
@@ -47,7 +69,7 @@ function createStore() {
     }
   }
 
-  // Vendite, acquisti e cambi di look: uno alla volta, con l'errore da mostrare se va male.
+  // Vendite, acquisti, ricette e cambi di look: uno alla volta, con l'errore da mostrare se va male.
   async function act(path, body) {
     if (busy.value) return false
     busy.value = true
@@ -82,12 +104,21 @@ function createStore() {
   // I pesci, dal più recente, con la specie che si vede al lago.
   const fish = computed(() => items.value.filter((i) => i.itemId === FISH).map((f) => ({ ...f, species: speciesFor(f.weightKg) })))
   const owned = computed(() => new Set(items.value.map((i) => i.itemId)))
+  // Zuppe, ticket e materiali sono una riga ciascuno, con la quantità.
+  const count = (itemId) => items.value.find((i) => i.itemId === itemId)?.quantity ?? 0
+  const soups = computed(() => count(FISH_SOUP))
+  const tickets = computed(() => count(DUNGEON_TICKET))
+  // Tutti i materiali, nell'ordine del catalogo, anche quelli a zero.
+  const materials = computed(() => MATERIALS.map((m) => ({ ...m, quantity: count(m.id) })))
 
   return {
     ready: computed(() => data.value !== null),
     gold: computed(() => data.value?.gold ?? 0),
     equipment: computed(() => data.value?.equipment ?? NO_EQUIPMENT),
     fish,
+    soups,
+    tickets,
+    materials,
     // Cappelli e colori: si hanno se comprati, o se sono gratis.
     owns: (item) => item.price === 0 || owned.value.has(item.id),
     busy,
@@ -97,5 +128,7 @@ function createStore() {
     sell: (ids) => act('inventory/sell', { ids }),
     buy: (itemId) => act('shop/buy', { itemId }),
     equip: (slot, itemId) => act('inventory/equip', { slot, itemId }),
+    craft: (recipeId) => act('inventory/craft', { recipeId }),
+    runDungeon,
   }
 }

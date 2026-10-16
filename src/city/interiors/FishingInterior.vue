@@ -5,13 +5,14 @@ import ChatWindow from '../../components/ChatWindow.vue'
 import { useFishingLeaderboard } from '../../composables/useFishingLeaderboard.js'
 import { useFishingRoom } from '../../composables/useFishingRoom.js'
 import { useInventory } from '../../composables/useInventory.js'
+import { useTrade } from '../../composables/useTrade.js'
 import { BACKEND_ENABLED } from '../../config.js'
 import Avatar from '../Avatar.vue'
 import { DEFAULT_LOOK, lookOf } from '../avatar.js'
 import Angler from '../fishing/Angler.vue'
 import BigCatch from '../fishing/BigCatch.vue'
 import FishingBoard from '../fishing/FishingBoard.vue'
-import { BIG_KG, clampToLakeside, formatKg, LAKE, pointsFor, rollCatch, SCALE, SEAT_SPOTS, SHORE, walkLakeside } from '../fishing/lake.js'
+import { BIG_KG, BOTTLE_CHANCE, clampToLakeside, formatKg, LAKE, pointsFor, rollCatch, SCALE, SEAT_SPOTS, SHORE, walkLakeside } from '../fishing/lake.js'
 import SpeechBubble from '../SpeechBubble.vue'
 import InteriorLayout from './InteriorLayout.vue'
 
@@ -22,7 +23,9 @@ const plans = [
   'Cammina fino a una sedia libera attorno al lago: ce ne sono 10, una persona per sedia.',
   'Tra 10 e 20 minuti abbocca: 3 volte su 4 il pesce resta all\'amo.',
   'Più pesa, più punti: 10 per chilo. Uno su dieci supera i 5 kg.',
+  'Una volta su 15 col pesce sale una bottiglia: dentro c\'è un ticket per il dungeon.',
   'Alzarsi, camminare altrove o uscire dalla zona libera la sedia.',
+  'Tasto destro su un altro giocatore per proporgli uno scambio.',
 ]
 
 const session = BACKEND_ENABLED ? authClient.useSession() : ref({ data: null })
@@ -32,6 +35,8 @@ const myName = computed(() => {
 })
 // Il proprio look viene dall'inventario, così cambia subito; quello degli altri dalla stanza.
 const inventory = useInventory()
+// Tasto destro su un altro giocatore, che passeggi o peschi: il menu per chiedergli uno scambio.
+const trade = useTrade()
 const myLook = computed(() => (session.value.data?.user ? lookOf(myName.value, inventory.equipment.value) : DEFAULT_LOOK))
 
 const { board, failed, refreshSoon } = useFishingLeaderboard()
@@ -81,7 +86,7 @@ const crew = [
   { seat: 1, name: 'Cuoca Hotfix', look: { color: '#ba68c8', hat: 'chef' } },
   { seat: 4, name: 'Nostromo Deploy', look: { color: '#9ccc65', hat: 'cap' } },
   { seat: 8, name: 'Capitan Merge', look: { color: '#ff7a59', hat: 'pirate' } },
-].map((c, i) => reactive({ ...c, phase: 'waiting', weight: 0, me: false, next: Date.now() / 1000 + 3 + i * 5 }))
+].map((c, i) => reactive({ ...c, phase: 'waiting', weight: 0, bottle: false, me: false, next: Date.now() / 1000 + 3 + i * 5 }))
 
 function demoStep(c, now) {
   if (now < c.next) return
@@ -92,6 +97,7 @@ function demoStep(c, now) {
     const kg = rollCatch()
     c.phase = kg === null ? 'escaped' : 'caught'
     if (kg !== null) c.weight = kg
+    c.bottle = kg !== null && Math.random() < BOTTLE_CHANCE
     c.next = now + (kg !== null && kg >= BIG_KG ? 10 : 6)
   } else {
     c.phase = 'waiting'
@@ -172,7 +178,7 @@ const scene = computed(() =>
   [
     ...PROPS,
     ...SEAT_SPOTS.map((s) => ({ id: `seat-${s.seat}`, kind: 'seat', y: s.y, spot: s })),
-    ...walkers.value.map((w) => ({ ...w, id: `walker-${w.id}`, kind: 'walker' })),
+    ...walkers.value.map((w) => ({ ...w, sessionId: w.id, id: `walker-${w.id}`, kind: 'walker' })),
   ].sort((a, b) => a.y - b.y),
 )
 // I fumetti, sopra a tutto. SpeechBubble è fatto per i personaggi della piazza: lo si sposta
@@ -253,7 +259,7 @@ const status = computed(() => {
   const m = mine.value
   if (m) {
     if (m.phase === 'bite') return { text: 'Ha abboccato!!', tone: 'bite', stand: true }
-    if (m.phase === 'caught') return { text: `Preso! ${formatKg(m.weight)} · +${pointsFor(m.weight)} pt`, tone: 'caught', stand: true }
+    if (m.phase === 'caught') return { text: `Preso! ${formatKg(m.weight)} · +${pointsFor(m.weight)} pt${m.bottle ? ' · e una bottiglia col ticket del dungeon! 🍾' : ''}`, tone: 'caught', stand: true }
     if (m.phase === 'escaped') return { text: 'Scappato… la lenza torna in acqua', tone: 'escaped', stand: true }
     return { text: `🎣 In pesca da ${clockText(now.value - m.since)} · prima o poi abbocca`, stand: true }
   }
@@ -414,8 +420,8 @@ const farTrees = Array.from({ length: 22 }, (_, i) => ({ x: i * 78 - 20, r: 26 +
 
       <!-- Sedie, personaggi e oggetti sul prato, dal fondo verso chi guarda -->
       <template v-for="item in scene" :key="item.id">
-        <Angler v-if="item.kind === 'seat'" :spot="item.spot" :angler="anglers.get(item.spot.seat) ?? null" :can-sit="online" @sit="sit" />
-        <g v-else-if="item.kind === 'walker'">
+        <Angler v-if="item.kind === 'seat'" :spot="item.spot" :angler="anglers.get(item.spot.seat) ?? null" :can-sit="online" @sit="sit" @menu="(e) => online && trade.openMenu(e, anglers.get(item.spot.seat))" />
+        <g v-else-if="item.kind === 'walker'" @contextmenu="online && trade.openMenu($event, { ...item, id: item.sessionId })">
           <g :transform="`translate(${item.x} ${item.y}) scale(${SCALE})`">
             <Avatar :look="item.look" :dir="item.dir" :walking="item.walking" />
           </g>

@@ -4,6 +4,7 @@ import { authClient, displayName } from '../../auth.js'
 import ChatWindow from '../../components/ChatWindow.vue'
 import { usePlazaRoom } from '../../composables/usePlazaRoom.js'
 import { useInventory } from '../../composables/useInventory.js'
+import { useTrade } from '../../composables/useTrade.js'
 import { BACKEND_ENABLED } from '../../config.js'
 import Avatar from '../Avatar.vue'
 import { DEFAULT_LOOK, lookOf } from '../avatar.js'
@@ -19,6 +20,7 @@ const plans = BACKEND_ENABLED
   ? [
       'Allo shop si comprano cappelli con le monete d\'oro: si guadagnano vendendo i pesci.',
       'Quello che si compra si indossa dalla finestra del personaggio (tasto C o il proprio personaggio in alto a destra).',
+      'Tasto destro su un altro giocatore per proporgli uno scambio: monete, pesci, zuppe, ticket, materiali e cappelli.',
     ]
   : ['Allo shop si provano i cappelli sul proprio personaggio.', 'Le monete si guadagneranno in città: gemme, bug chiusi e pesci.']
 
@@ -45,6 +47,8 @@ const myLook = computed(() => (session.value.data?.user ? lookOf(myName.value, i
 // Da loggati la piazza è multigiocatore: i personaggi e la chat arrivano dalla stanza della
 // piazza. Senza backend, prima del login o col server spento si passeggia da soli tra i passanti.
 const plaza = BACKEND_ENABLED ? usePlazaRoom() : null
+// Tasto destro su un altro giocatore: il menu per chiedergli uno scambio.
+const trade = useTrade()
 const online = computed(() => plaza?.status.value === 'online')
 
 // Si arriva dal vialetto in basso, come entrando in piazza dalla città.
@@ -377,7 +381,7 @@ const nearShop = computed(
 
       <!-- Personaggi e oggetti, dal fondo verso chi guarda -->
       <template v-for="item in scene" :key="item.id">
-        <g v-if="item.kind === 'actor'" :transform="`translate(${item.x} ${item.y})`">
+        <g v-if="item.kind === 'actor'" :transform="`translate(${item.x} ${item.y})`" @contextmenu="trade.openMenu($event, item)">
           <Avatar :look="item.look" :dir="item.dir" :walking="item.walking" :name="item.name" :me="item.me" />
         </g>
         <use v-else :href="`#plaza-${item.kind}`" :transform="`translate(${item.x} ${item.y})`" />

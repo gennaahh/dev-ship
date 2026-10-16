@@ -2,6 +2,7 @@ import { onUnmounted, ref, watch } from 'vue'
 import { createChat } from './chat.js'
 import { useGameRoom } from './useGameRoom.js'
 import { useInventory } from './useInventory.js'
+import { useTrade } from './useTrade.js'
 
 // Quanto in fretta la posizione disegnata insegue quella del server (per secondo).
 const SMOOTHING = 12
@@ -29,20 +30,27 @@ export function useWalkingRoom(name, { clamp, onJoin, onLeave } = {}) {
     onMessage: (m) => bubbles.set(m.from, { text: m.text, until: performance.now() + bubbleMs(m.text) }),
   })
 
+  // Gli scambi tra chi è nella stanza, col tasto destro su un giocatore.
+  const trade = useTrade()
   const game = useGameRoom(name, {}, {
     onJoin(r) {
       chat.attach(r)
+      trade.attach(r)
       onJoin?.(r)
       last = performance.now()
       raf = requestAnimationFrame(frame)
     },
-    onReconnect: chat.refresh,
+    onReconnect(r) {
+      chat.refresh(r)
+      trade.dropped()
+    },
     onLeave() {
       players.value = []
       drawn.clear()
       bubbles.clear()
       going = null
       cancelAnimationFrame(raf)
+      trade.detach()
       onLeave?.()
     },
   })

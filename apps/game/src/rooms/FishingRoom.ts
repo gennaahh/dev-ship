@@ -3,8 +3,9 @@ import { z } from 'zod'
 import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { ChatInput, cleanText, createMessage, history, RateLimit, TypingInput } from '../chat.ts'
 import { loadLook, refreshLook } from '../db.ts'
-import { BIG_KG, BIG_RESULT_MS, BITE_MS, biteDelay, pointsFor, RESULT_MS, rollCatch, saveCatch } from '../fishing.ts'
+import { BIG_KG, BIG_RESULT_MS, BITE_MS, biteDelay, pointsFor, RESULT_MS, rollBottle, rollCatch, saveCatch } from '../fishing.ts'
 import { clampToLakeside, lakeEntrance, SEAT_SPOTS, SEATS, stepBack, walkLakeside } from '../lake.ts'
+import { TradeDesk } from '../trade.ts'
 import { PlazaPlayer } from './PlazaState.ts'
 import { FishingSeat, FishingState } from './FishingState.ts'
 
@@ -18,7 +19,8 @@ type FishingClient = Client<{ auth: PlayerAuth }>
 
 // La zona di pesca: si cammina attorno al lago e si chiacchiera come in piazza, e ci si siede
 // su una delle dieci sedie camminandoci. Una persona per sedia: chi ci arriva per primo.
-// Seduti si aspetta: dopo 10-20 minuti abbocca, e 3 volte su 4 il pesce resta all'amo.
+// Seduti si aspetta: dopo 10-20 minuti abbocca, e 3 volte su 4 il pesce resta all'amo. Una
+// volta su 15 col pesce sale anche una bottiglia, col ticket per il dungeon.
 // Le sedie sono le stesse per tutti, quindi la stanza è una sola.
 export class FishingRoom extends Room<{ state: FishingState; client: FishingClient }> {
   maxClients = 100
@@ -34,6 +36,8 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
   // Chi è seduto dove, per userId: con due schede aperte si pesca comunque da una sola sedia.
   private seatOfUser = new Map<string, string>()
   private rate = new RateLimit()
+  // Gli scambi tra chi è al lago (col tasto destro su un giocatore).
+  private trades = new TradeDesk(this, (userIds) => userIds.forEach((id) => refreshLook(this.clients, this.state.players, id)))
 
   static async onAuth(token: string) {
     if (!token) throw new ServerError(401, 'Serve il login')
@@ -82,6 +86,7 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
       this.broadcast('chat', message)
       await history.push(this.historyKey, message)
     }),
+    ...this.trades.messages,
   }
 
   private get historyKey() {
@@ -120,6 +125,7 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
     s.phase = 'waiting'
     s.since = Date.now()
     s.weight = 0
+    s.bottle = false
     this.state.seats.set(key, s)
     this.seatOfUser.set(auth.userId, key)
     this.schedule(key, biteDelay(), () => this.bite(key, auth.userId))
@@ -144,11 +150,13 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
     if (kg === null) {
       seat.phase = 'escaped'
     } else {
+      const bottle = rollBottle()
       seat.phase = 'caught'
       seat.weight = kg
-      this.broadcast('catch', { seat: Number(key), from: seat.sessionId, name: seat.name, weight: kg, points: pointsFor(kg), big: kg >= BIG_KG })
-      // Il pesce è nell'inventario: lo si dice a tutte le schede del pescatore.
-      saveCatch(userId, kg).then((saved) => {
+      seat.bottle = bottle
+      this.broadcast('catch', { seat: Number(key), from: seat.sessionId, name: seat.name, weight: kg, points: pointsFor(kg), big: kg >= BIG_KG, bottle })
+      // Il pesce (e il ticket) è nell'inventario: lo si dice a tutte le schede del pescatore.
+      saveCatch(userId, kg, bottle).then((saved) => {
         if (!saved) return
         for (const c of this.clients) if (c.auth?.userId === userId) c.send('inventory')
       })
@@ -195,10 +203,12 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
   onDrop(client: Client) {
     const player = this.state.players.get(client.sessionId)
     if (player) player.typing = false
+    this.trades.leave(client.sessionId)
     this.allowReconnection(client, RECONNECT_SECONDS)
   }
 
   onLeave(client: FishingClient) {
+    this.trades.leave(client.sessionId)
     this.stand(client)
     this.targets.delete(client.sessionId)
     this.goingToSeat.delete(client.sessionId)

@@ -12,6 +12,8 @@ export const FishingSeat = schema({
   since: t.number(),
   // Peso dell'ultima cattura in kg, per l'animazione di 'caught'.
   weight: t.number(),
+  // Se insieme all'ultimo pesce è salita la bottiglia col ticket del dungeon.
+  bottle: t.boolean(),
 }, 'FishingSeat')
 export type FishingSeat = SchemaType<typeof FishingSeat>
 

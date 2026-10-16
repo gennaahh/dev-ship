@@ -1,17 +1,23 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { SPECIAL_KG, SPECIAL_MULTIPLIER } from '@dev-city/shared/catalog'
+import { FISH_SOUP, RARITY_NAMES, recipe, SPECIAL_KG, SPECIAL_MULTIPLIER } from '@dev-city/shared/catalog'
+import { SOUP_BELOW } from '@dev-city/shared/dungeon'
+import MaterialIcon from '../city/dungeon/MaterialIcon.vue'
+import TicketBottle from '../city/dungeon/TicketBottle.vue'
 import Fish from '../city/fishing/Fish.vue'
 import { formatKg } from '../city/fishing/lake.js'
 import { useInventory } from '../composables/useInventory.js'
+import SoupBowl from './SoupBowl.vue'
 
-// L'inventario del giocatore: le monete d'oro e i pesci presi, da vendere. Si apre dallo zainetto
-// in alto a destra o col tasto I. Cappelli e colori si indossano dalla finestra del personaggio
-// (tasto C).
+// L'inventario del giocatore: le monete d'oro, i pesci presi, da vendere, quello che serve per il
+// dungeon (zuppe dal crafting, tasto R, e ticket dalla pesca) e i materiali portati via dal
+// dungeon. Si apre dallo zainetto in alto a destra o col tasto I. Cappelli e colori si
+// indossano dalla finestra del personaggio (tasto C).
 const emit = defineEmits(['close'])
 
 const inventory = useInventory()
-const { fish, gold, busy, error } = inventory
+const { fish, soups, tickets, materials, gold, busy, error } = inventory
+const soup = recipe(FISH_SOUP)
 
 // "Vendi tutti" chiede conferma: un secondo clic entro qualche secondo.
 const total = computed(() => fish.value.reduce((sum, f) => sum + f.price, 0))
@@ -72,6 +78,41 @@ function onKeydown(e) {
             <button class="small sell" :disabled="busy" @click="inventory.sell([f.id])">Vendi · 🪙 {{ f.price }}</button>
           </li>
         </ul>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h3>Per il dungeon</h3>
+          <button class="small cook" @click="inventory.open.value = 'craft'">Cucina zuppe</button>
+        </div>
+        <ul class="grid">
+          <li class="card" :class="{ none: !tickets }">
+            <svg viewBox="-50 -60 100 115" aria-hidden="true"><TicketBottle /></svg>
+            <span class="item-name">Ticket in bottiglia</span>
+            <span class="weight">× {{ tickets }}</span>
+            <span class="tag">Per una run</span>
+          </li>
+          <li class="card" :class="{ none: !soups }">
+            <svg viewBox="-56 -56 112 104" aria-hidden="true"><SoupBowl :steam="soups > 0" /></svg>
+            <span class="item-name">{{ soup.name }}</span>
+            <span class="weight">× {{ soups }}</span>
+            <span class="heal" :title="`Nel dungeon si beve da sola sotto i ${SOUP_BELOW} HP`">❤ Cura {{ soup.heal }} HP</span>
+          </li>
+        </ul>
+        <p v-if="!tickets" class="empty">I ticket si ripescano al lago: una volta su 15 col pesce sale una bottiglia.</p>
+        <p v-else-if="!soups" class="empty">Col crafting <kbd>R</kbd> 3 pesci diventano una zuppa: nel dungeon allunga la run.</p>
+      </section>
+
+      <section>
+        <h3>Materiali</h3>
+        <ul class="grid materials">
+          <li v-for="m in materials" :key="m.id" class="card material" :class="[m.rarity, { none: !m.quantity }]" :title="`${RARITY_NAMES[m.rarity]} · per ${m.use === 'armor' ? 'le armature' : 'le armi'}`">
+            <svg viewBox="-34 -34 68 68" aria-hidden="true"><MaterialIcon :id="m.id" /></svg>
+            <span class="item-name">{{ m.name }}</span>
+            <span class="weight">× {{ m.quantity }}</span>
+          </li>
+        </ul>
+        <p class="empty">Li lasciano i mostri del dungeon: serviranno per armi e armature.</p>
       </section>
 
       <p class="hint">Cappelli e colori si indossano dalla finestra del personaggio <kbd>C</kbd></p>
@@ -207,6 +248,7 @@ h3 {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 14px;
 }
+.empty kbd,
 .hint kbd {
   font-family: 'Lilita One', 'Baloo 2', system-ui, sans-serif;
   font-size: 12px;
@@ -255,6 +297,39 @@ h3 {
   border-radius: 8px;
   background: #ffd54a;
   font-size: 13px;
+}
+.heal {
+  margin-top: 4px;
+  padding: 0 8px 2px;
+  border-radius: 8px;
+  background: #ff8a9a;
+  font-size: 13px;
+}
+.cook {
+  background: #ff9a4a;
+}
+.tag {
+  margin-top: 4px;
+  padding: 0 8px 2px;
+  border-radius: 8px;
+  background: #e6defc;
+  font-size: 13px;
+}
+.card.none {
+  opacity: 0.55;
+}
+.materials {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  margin: 8px 0;
+}
+.material svg {
+  height: 44px;
+}
+.material.uncommon {
+  background: #d8f3ff;
+}
+.material.rare {
+  background: #f1dcff;
 }
 .sell {
   margin-top: 4px;

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import Avatar from '../Avatar.vue'
 import SpeechBubble from '../SpeechBubble.vue'
+import TicketBottle from '../dungeon/TicketBottle.vue'
 import Fish from './Fish.vue'
 import { BIG_KG, formatKg, pointsFor, SCALE, speciesFor } from './lake.js'
 
@@ -11,15 +12,17 @@ import { BIG_KG, formatKg, pointsFor, SCALE, speciesFor } from './lake.js'
 // Dentro si disegna con la sedia nell'origine e alla misura dei personaggi della piazza, poi
 // tutto si rimpicciolisce di SCALE: il galleggiante va riportato in queste coordinate.
 // Le animazioni ripartono a ogni cambio di fase (i gruppi hanno la fase come key):
-// waiting (si aspetta), bite (ha abboccato), caught (preso, il pesce salta sulla canna), escaped.
+// waiting (si aspetta), bite (ha abboccato), caught (preso, il pesce salta sulla canna, a volte
+// con la bottiglia del ticket del dungeon), escaped.
 const props = defineProps({
   spot: { type: Object, required: true },
-  // null se la sedia è libera, altrimenti { name, phase, weight, me, look, say, typing }.
+  // null se la sedia è libera, altrimenti { name, phase, weight, bottle, me, look, say, typing }.
   angler: { type: Object, default: null },
   // La sedia libera si può prendere (da loggati, col server raggiungibile).
   canSit: { type: Boolean, default: false },
 })
-const emit = defineEmits(['sit'])
+// menu: tasto destro su chi pesca (l'evento del browser), per il menu degli scambi.
+const emit = defineEmits(['sit', 'menu'])
 
 const SEAT_H = 22 // il personaggio sta seduto un po' più in alto dei piedi della sedia
 
@@ -139,7 +142,7 @@ function sit(e) {
       </g>
 
       <!-- Chi pesca, seduto -->
-      <g transform="translate(0 -22)" class="seated">
+      <g transform="translate(0 -22)" class="seated" @contextmenu="emit('menu', $event)">
         <Avatar :look="angler.look" :dir="geo.dir" />
       </g>
 
@@ -175,6 +178,10 @@ function sit(e) {
               <g :transform="`rotate(-90) scale(${fishScale})`">
                 <Fish :kg="kg" />
               </g>
+              <!-- La bottiglia, impigliata alla lenza accanto al pesce -->
+              <g v-if="angler.bottle" :transform="`translate(${geo.dir * (30 + 20 * fishScale)} ${-mouth + 40}) scale(0.6)`">
+                <TicketBottle />
+              </g>
             </g>
           </g>
         </g>
@@ -207,6 +214,7 @@ function sit(e) {
         <text v-if="big" class="wow" y="-76" text-anchor="middle">{{ kg >= 15 ? 'LEGGENDARIO!' : 'ENORME!' }}</text>
         <text class="kg" y="-34" text-anchor="middle">{{ formatKg(kg) }}</text>
         <text class="species" y="-4" text-anchor="middle">{{ speciesFor(kg).name }} · +{{ pointsFor(kg) }} pt</text>
+        <text v-if="angler.bottle" class="species" y="26" text-anchor="middle">+ una bottiglia col ticket!</text>
       </g>
     </template>
    </g>

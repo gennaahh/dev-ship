@@ -1,35 +1,79 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useDungeonRoom } from '../../composables/useDungeonRoom.js'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { MATERIALS, RARITY_NAMES } from '@dev-city/shared/catalog'
+import { BOSS, MAX_WAVES, PLAYER_HP, simulateRun, SOUP_BELOW, SOUP_HEAL } from '@dev-city/shared/dungeon'
+import { authClient, displayName } from '../../auth.js'
+import SoupBowl from '../../components/SoupBowl.vue'
+import { useInventory } from '../../composables/useInventory.js'
 import { BACKEND_ENABLED } from '../../config.js'
 import Avatar from '../Avatar.vue'
+import { DEFAULT_LOOK, lookOf } from '../avatar.js'
+import MaterialIcon from '../dungeon/MaterialIcon.vue'
+import Monster from '../dungeon/Monster.vue'
+import TicketBottle from '../dungeon/TicketBottle.vue'
+import { monsterX, STAGE, useRunPlayback } from '../dungeon/useRunPlayback.js'
 import InteriorLayout from './InteriorLayout.vue'
 
 defineProps({ place: { type: Object, required: true } })
 defineEmits(['leave'])
 
 const plans = [
-  'I bug aperti sono mostri da sconfiggere: chiuderli fa salire di livello.',
-  'Più un bug è vecchio, più il mostro è grosso.',
-  'Il venerdì può comparire il boss: un incidente in produzione.',
-]
-const bugs = [
-  { x: 420, y: 700, s: 1.2, c: '#7dff8a' },
-  { x: 800, y: 620, s: 0.8, c: '#ff6fb5' },
-  { x: 1120, y: 720, s: 1, c: '#ffd54a' },
+  'Si entra con un ticket: si ripesca al lago, in una bottiglia, una volta su 15.',
+  `Si parte con ${PLAYER_HP} HP e arrivano ondate di bug sempre più forti; ogni 5 c'è il boss.`,
+  `Va tutto da solo, si guarda e basta. Sotto i ${SOUP_BELOW} HP si beve una zuppa di pesce (+${SOUP_HEAL} HP), finché ce ne sono.`,
+  'Monete e materiali per armi e armature restano anche quando si perde.',
 ]
 
-// Prototipo multigiocatore: chi è nel dungeon si vede muovere sul pavimento.
-// In modalità demo (senza backend) il dungeon resta la bozza statica.
-const { status, players } = BACKEND_ENABLED ? useDungeonRoom() : { status: ref(null), players: ref([]) }
-const statusText = computed(() => {
-  if (status.value === 'connecting') return 'Connessione al server di gioco…'
-  if (status.value === 'login') return 'Accedi (in basso al centro) per vedere gli altri giocatori'
-  if (status.value === 'reconnecting') return 'Connessione persa, riprovo…'
-  if (status.value === 'offline') return 'Server di gioco offline: sei da solo nel dungeon, riprovo…'
-  const n = players.value.length
-  return `${n === 1 ? 'Sei da solo' : `${n} giocatori`} · muoviti con WASD o con le frecce`
-})
+const session = BACKEND_ENABLED ? authClient.useSession() : ref({ data: null })
+const user = computed(() => session.value.data?.user ?? null)
+const inventory = useInventory()
+const look = computed(() => (user.value ? lookOf(displayName(user.value), inventory.equipment.value) : DEFAULT_LOOK))
+
+// lobby (l'ingresso), run (si guarda) o end (il resoconto).
+const phase = ref('lobby')
+const demo = ref(false)
+const { state, start, skip } = useRunPlayback()
+
+// La run la gioca l'API e l'inventario aggiornato arriva subito: si mette a fine run, così
+// monete e materiali si vedono arrivare dai mostri.
+let applyInventory = null
+const soupsAtStart = ref(0)
+async function enter() {
+  const res = await inventory.runDungeon()
+  if (!res) return
+  demo.value = false
+  applyInventory = res.apply
+  soupsAtStart.value = inventory.soups.value
+  start(res.run, soupsAtStart.value)
+  phase.value = 'run'
+}
+// Senza backend o senza login: una run di prova, simulata qui, che non dà niente.
+const DEMO_SOUPS = 3
+function enterDemo() {
+  demo.value = true
+  soupsAtStart.value = DEMO_SOUPS
+  start(simulateRun(DEMO_SOUPS), DEMO_SOUPS)
+  phase.value = 'run'
+}
+function finish() {
+  applyInventory?.()
+  applyInventory = null
+  phase.value = 'end'
+}
+watch(() => state.done, (done) => done && finish())
+onUnmounted(() => applyInventory?.())
+
+const canPlay = computed(() => BACKEND_ENABLED && user.value && inventory.ready.value)
+const hpPercent = computed(() => (state.hp / PLAYER_HP) * 100)
+const dropped = computed(() => MATERIALS.filter((m) => state.materials[m.id]).map((m) => ({ ...m, n: state.materials[m.id] })))
+const looted = computed(() => dropped.value.reduce((sum, m) => sum + m.n, 0))
+// Le ondate superate: tutte se ripulito, altrimenti quelle prima di quella in cui si è caduti.
+const wavesBeaten = computed(() => (state.cleared ? state.wave : state.wave - 1))
+const soupsDrunk = computed(() => soupsAtStart.value - state.soups)
+
+const alive = computed(() => state.monsters.filter((m) => !m.dead))
+const xOf = (m) => (m.dead ? m.x : monsterX(alive.value.indexOf(m)))
+const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
 </script>
 
 <template>
@@ -67,58 +111,467 @@ const statusText = computed(() => {
         </g>
         <!-- Catene -->
         <path d="M 760 0 L 760 200 M 840 0 L 840 160" fill="none" stroke="#8e93aa" stroke-width="8" stroke-dasharray="14 8" />
-        <!-- Bug-mostri -->
-        <g v-for="(b, i) in bugs" :key="i" class="bug" :style="{ animationDelay: `${-i * 0.7}s` }">
-          <g :transform="`translate(${b.x} ${b.y}) scale(${b.s})`">
-            <path d="M -60 10 L -90 -10 M -60 30 L -96 34 M -50 46 L -80 70 M 60 10 L 90 -10 M 60 30 L 96 34 M 50 46 L 80 70" fill="none" />
-            <ellipse cx="0" cy="20" rx="66" ry="48" :fill="b.c" />
-            <path d="M 0 -26 L 0 66" fill="none" />
-            <circle cx="0" cy="-36" r="30" fill="#4b4870" />
-            <path d="M -14 -60 L -30 -90 M 14 -60 L 30 -90" fill="none" />
-            <circle cx="-11" cy="-40" r="9" fill="#fff" />
-            <circle cx="11" cy="-40" r="9" fill="#fff" />
-            <circle cx="-9" cy="-38" r="4" fill="#2d2a4a" stroke="none" />
-            <circle cx="13" cy="-38" r="4" fill="#2d2a4a" stroke="none" />
-          </g>
-        </g>
-        <!-- Giocatori -->
-        <g v-for="p in players" :key="p.id" :transform="`translate(${p.x} ${p.y})`">
-          <Avatar :look="{ color: p.color }" :dir="p.dir" :walking="p.walking" :name="p.me ? `${p.name} (tu)` : p.name" :me="p.me" />
-        </g>
       </g>
     </svg>
-    <div v-if="status" class="room-status" :class="status" role="status" aria-live="polite">{{ statusText }}</div>
+
+    <!-- La scena della run: il giocatore a sinistra, i mostri in fila a destra. -->
+    <div v-if="phase === 'run'" class="stage">
+      <svg :viewBox="`0 0 ${STAGE.width} ${STAGE.height}`" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+        <g :transform="`translate(${STAGE.playerX} ${STAGE.floor}) scale(1.5)`">
+          <g :key="`swing-${state.swing}`" class="swing">
+            <g :key="`hurt-${state.hurt}`" :class="{ ouch: state.hurt }">
+              <Avatar :look="look" />
+            </g>
+          </g>
+          <!-- La spada di legno, finché non ci saranno le armi -->
+          <g :key="`sword-${state.swing}`" class="sword" stroke="#2d2a4a" stroke-width="4" stroke-linecap="round">
+            <path d="M 34 -46 L 74 -100" stroke-width="10" />
+            <path d="M 34 -46 L 74 -100" stroke="#e8c48a" stroke-width="5" />
+            <path d="M 26 -54 L 42 -38" stroke="#a0673a" stroke-width="7" />
+          </g>
+        </g>
+        <!-- Le zampe arrivano da destra a ogni ondata: la chiave cambia e l'ingresso riparte -->
+        <g v-for="m in state.monsters" :key="m.id" class="slot" :class="{ dead: m.dead }" :style="{ transform: `translate(${xOf(m)}px, ${STAGE.floor}px)` }">
+          <g class="enter">
+            <g :key="`attack-${m.attack}`" :class="{ strike: m.attack }">
+              <g :key="`flash-${m.flash}`" :class="{ flash: m.flash }">
+                <Monster :kind="m.kind" />
+              </g>
+            </g>
+            <g v-if="!m.dead" :transform="`translate(0 ${barY(m)})`">
+              <rect x="-50" y="-7" width="100" height="14" rx="7" fill="#2d2a4a" />
+              <rect x="-47" y="-4" :width="Math.max(0, 94 * (m.hp / m.max))" height="8" rx="4" fill="#ff5a6e" />
+            </g>
+          </g>
+        </g>
+        <!-- Danni, cure e bottino che salgono e svaniscono -->
+        <g v-for="f in state.floats" :key="f.id" class="float" :class="f.tone" :style="{ transform: `translate(${f.x}px, ${f.y}px)` }">
+          <g v-if="f.icon === 'soup'" transform="translate(-58 0) scale(0.45)"><SoupBowl :steam="false" /></g>
+          <g v-else-if="f.icon" transform="scale(0.8)"><MaterialIcon :id="f.icon" /></g>
+          <g v-if="f.tone === 'gold'" transform="translate(-34 -10)" stroke="#2d2a4a" stroke-width="4">
+            <circle r="14" fill="#ffd54a" />
+            <circle r="7" fill="none" stroke="#e0a82e" stroke-width="3" />
+          </g>
+          <text v-if="f.text" :x="f.tone === 'gold' ? -12 : 0" y="0">{{ f.text }}</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- In alto durante la run: ondata, vita, zuppe e bottino -->
+    <div v-if="phase === 'run'" class="run-hud" role="status">
+      <span class="wave">Ondata {{ state.wave }}<small>/{{ MAX_WAVES }}</small></span>
+      <span class="hp" :title="`${state.hp} HP su ${PLAYER_HP}`">
+        <span class="hp-fill" :class="{ low: state.hp <= SOUP_BELOW }" :style="{ width: `${hpPercent}%` }" />
+        <span class="hp-text">❤ {{ state.hp }}</span>
+      </span>
+      <span class="pill" title="Zuppe di pesce rimaste">
+        <svg viewBox="-56 -56 112 104" aria-hidden="true"><SoupBowl :steam="false" /></svg>{{ state.soups }}
+      </span>
+      <span class="pill" title="Monete raccolte">🪙 {{ state.gold }}</span>
+      <span class="pill" title="Materiali raccolti">🎒 {{ looted }}</span>
+      <button class="skip" @click="skip">Salta ⏭</button>
+    </div>
+
+    <!-- L'ingresso: ticket, zuppe e il pulsante per entrare -->
+    <section v-if="phase === 'lobby'" class="panel" aria-labelledby="dungeon-title">
+      <h2 id="dungeon-title">Ingresso del dungeon</h2>
+      <template v-if="canPlay">
+        <div class="supplies">
+          <div class="supply">
+            <svg viewBox="-50 -60 100 115" aria-hidden="true"><TicketBottle /></svg>
+            <strong>{{ inventory.tickets.value }}</strong>
+            <span>ticket</span>
+          </div>
+          <div class="supply">
+            <svg viewBox="-56 -56 112 104" aria-hidden="true"><SoupBowl /></svg>
+            <strong>{{ inventory.soups.value }}</strong>
+            <span>{{ inventory.soups.value === 1 ? 'zuppa' : 'zuppe' }}</span>
+          </div>
+        </div>
+        <p v-if="!inventory.tickets.value" class="note">Nessun ticket. Al lago, una volta su 15, insieme al pesce sale una bottiglia con un ticket dentro.</p>
+        <p v-else-if="!inventory.soups.value" class="note">Niente zuppe: la run sarà breve. Col crafting <kbd>R</kbd> 3 pesci diventano una zuppa, che sotto i {{ SOUP_BELOW }} HP ti ridà {{ SOUP_HEAL }} HP.</p>
+        <p v-else class="note">Le zuppe si bevono da sole sotto i {{ SOUP_BELOW }} HP: più ne hai, più ondate superi e più bottino porti a casa.</p>
+        <p v-if="inventory.error.value" class="error" role="alert">{{ inventory.error.value }}</p>
+        <button class="go" :disabled="!inventory.tickets.value || inventory.busy.value" @click="enter">Entra · usa 1 ticket</button>
+      </template>
+      <template v-else>
+        <p class="note">{{ BACKEND_ENABLED ? 'Accedi (in basso al centro) per entrare coi tuoi ticket.' : 'Demo: con il backend si entra coi ticket pescati al lago.' }}</p>
+        <button class="go" @click="enterDemo">Guarda una run di prova</button>
+      </template>
+    </section>
+
+    <!-- Il resoconto -->
+    <section v-if="phase === 'end'" class="panel" aria-labelledby="result-title">
+      <h2 id="result-title">{{ state.cleared ? 'Dungeon ripulito!' : `Sconfitto all'ondata ${state.wave}` }}</h2>
+      <p v-if="demo" class="note">Run di prova: niente premi.</p>
+      <ul class="stats">
+        <li><strong>{{ wavesBeaten }}</strong> {{ wavesBeaten === 1 ? 'ondata superata' : 'ondate superate' }}</li>
+        <li><strong>🪙 {{ state.gold }}</strong> monete</li>
+        <li><strong>{{ soupsDrunk }}</strong> {{ soupsDrunk === 1 ? 'zuppa bevuta' : 'zuppe bevute' }}</li>
+      </ul>
+      <ul v-if="dropped.length" class="loot">
+        <li v-for="m in dropped" :key="m.id" class="material" :class="m.rarity" :title="`${m.name} · ${RARITY_NAMES[m.rarity]}`">
+          <svg viewBox="-34 -34 68 68" aria-hidden="true"><MaterialIcon :id="m.id" /></svg>
+          <span>{{ m.name }}</span>
+          <strong>× {{ m.n }}</strong>
+        </li>
+      </ul>
+      <p v-else class="note">Nessun materiale questa volta.</p>
+      <div class="actions">
+        <button v-if="!demo && inventory.tickets.value" class="go" :disabled="inventory.busy.value" @click="enter">Entra ancora · {{ inventory.tickets.value }} ticket</button>
+        <button class="back-to-lobby" @click="phase = 'lobby'">Ok</button>
+      </div>
+    </section>
   </InteriorLayout>
 </template>
 
 <style scoped>
-.room-status {
+/* La scena sta tra l'HUD in alto, la chat in basso a sinistra e il cartello in basso a destra. */
+.stage {
   position: absolute;
-  top: 16px;
+  inset: 150px 16px 90px 372px;
+  pointer-events: none;
+}
+.stage svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.slot {
+  transition: transform 0.35s ease;
+}
+.slot.dead {
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.35s ease;
+}
+.enter {
+  animation: enter 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes enter {
+  from {
+    translate: 700px 0;
+  }
+}
+.strike {
+  animation: strike 0.25s ease-out;
+}
+@keyframes strike {
+  50% {
+    translate: -26px 0;
+  }
+}
+.flash {
+  animation: flash 0.2s steps(1);
+}
+@keyframes flash {
+  0% {
+    filter: brightness(2.2);
+  }
+}
+.swing {
+  animation: swing 0.22s ease-out;
+}
+@keyframes swing {
+  50% {
+    translate: 18px 0;
+  }
+}
+.sword {
+  transform-origin: 30px -46px;
+  animation: slash 0.22s ease-out;
+}
+@keyframes slash {
+  50% {
+    rotate: 50deg;
+  }
+}
+.ouch {
+  animation: ouch 0.25s steps(1);
+}
+@keyframes ouch {
+  0% {
+    filter: sepia(1) saturate(6) hue-rotate(-30deg);
+  }
+}
+.float {
+  font-family: 'Lilita One', 'Baloo 2', system-ui, sans-serif;
+  font-size: 40px;
+  paint-order: stroke;
+  stroke: #2d2a4a;
+  stroke-width: 8px;
+  stroke-linejoin: round;
+  text-anchor: middle;
+  animation: rise 1.2s ease-out forwards;
+}
+.float text {
+  fill: #fff8e6;
+}
+.float.hurt text {
+  fill: #ff5a6e;
+}
+.float.heal text {
+  fill: #9ccc65;
+}
+.float.gold text {
+  fill: #ffd54a;
+}
+@keyframes rise {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -70px;
+  }
+}
+.run-hud {
+  position: absolute;
+  top: 84px;
   left: 50%;
   translate: -50% 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   max-width: calc(100% - 32px);
   box-sizing: border-box;
-  padding: 8px 16px 10px;
+  padding: 8px 10px;
   border: 4px solid #2d2a4a;
   border-radius: 14px;
   background: #fff8e6;
   box-shadow: 0 4px 0 #2d2a4a;
   color: #2d2a4a;
   font-size: 17px;
+}
+.wave {
+  padding: 2px 10px 4px;
+  border-radius: 9px;
+  background: #3a2d5c;
+  color: #fff8e6;
+}
+.wave small {
+  opacity: 0.7;
+}
+.hp {
+  position: relative;
+  width: 150px;
+  height: 26px;
+  overflow: hidden;
+  border: 3px solid #2d2a4a;
+  border-radius: 9px;
+  background: #e6e2d6;
+}
+.hp-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #9ccc65;
+  transition: width 0.2s ease;
+}
+.hp-fill.low {
+  background: #ff7a59;
+}
+.hp-text {
+  position: relative;
+  display: block;
+  text-align: center;
+  line-height: 24px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 9px 3px;
+  border: 3px solid #2d2a4a;
+  border-radius: 9px;
+  background: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.pill svg {
+  width: 24px;
+  height: 22px;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+}
+.skip {
+  padding: 2px 10px 4px;
+  border: 3px solid #2d2a4a;
+  border-radius: 9px;
+  background: #ffd54a;
+  color: #2d2a4a;
+  font-size: 15px;
+}
+.panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: min(460px, calc(100% - 32px));
+  max-height: calc(100% - 200px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 18px 22px 22px;
+  border: 5px solid #2d2a4a;
+  border-radius: 20px;
+  background: #fff8e6;
+  box-shadow: 0 6px 0 #2d2a4a;
+  color: #2d2a4a;
   text-align: center;
 }
-.room-status.login {
+h2 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: normal;
+  color: #6b4bd8;
+  text-shadow: 0 3px 0 #2d2a4a33;
+}
+.supplies {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.supply {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 120px;
+  padding: 8px 6px 10px;
+  border: 4px solid #2d2a4a;
+  border-radius: 14px;
+  background: #fff;
+}
+.supply svg {
+  width: 70px;
+  height: 66px;
+}
+.supply strong {
+  font-size: 26px;
+  font-weight: normal;
+  line-height: 1;
+}
+.supply span {
+  color: #6b6890;
+  font-size: 14px;
+}
+.note,
+.error {
+  margin: 12px 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+.note {
+  color: #6b6890;
+}
+.error {
+  color: #c0262d;
+  font-weight: 600;
+}
+kbd {
+  padding: 0 5px 1px;
+  border: 2px solid #2d2a4a;
+  border-bottom-width: 3px;
+  border-radius: 5px;
+  background: #fff;
+  font-family: 'Lilita One', 'Baloo 2', system-ui, sans-serif;
+  font-size: 12px;
+}
+.go,
+.back-to-lobby {
+  padding: 6px 20px 8px;
+  border: 4px solid #2d2a4a;
+  border-radius: 12px;
+  background: #9ccc65;
+  box-shadow: 0 3px 0 #2d2a4a;
+  color: #2d2a4a;
+  font-size: 20px;
+}
+.back-to-lobby {
   background: #ffd54a;
 }
-.room-status.offline,
-.room-status.reconnecting {
-  background: #ffb4a6;
+.go:active:not(:disabled),
+.back-to-lobby:active {
+  translate: 0 3px;
+  box-shadow: none;
 }
-/* Su schermi stretti scende sotto il pulsante per tornare in città. */
+.go:disabled {
+  background: #e6e2d6;
+  color: #6b6890;
+  cursor: not-allowed;
+}
+.stats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font-size: 16px;
+}
+.stats strong {
+  font-weight: normal;
+  font-size: 22px;
+}
+.loot {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.material {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 6px 8px;
+  border: 4px solid #2d2a4a;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+}
+.material.uncommon {
+  background: #d8f3ff;
+}
+.material.rare {
+  background: #f1dcff;
+}
+.material svg {
+  width: 44px;
+  height: 44px;
+}
+.material strong {
+  font-weight: normal;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+@media (max-width: 1240px) {
+  .stage {
+    bottom: 150px;
+  }
+}
+/* Sui telefoni l'HUD scende sotto il cartello del luogo, la scena sopra la chat. */
 @media (max-width: 720px) {
-  .room-status {
-    top: 84px;
+  .run-hud {
+    top: 176px;
+    width: calc(100% - 32px);
+    font-size: 15px;
+  }
+  .hp {
+    width: 110px;
+  }
+  .stage {
+    inset: 280px 8px 175px;
   }
 }
 .fire {
@@ -130,17 +583,15 @@ const statusText = computed(() => {
   from { transform: scale(0.85, 0.9); fill: #ff7a2e; }
   to { transform: scale(1.1, 1.15); fill: #ffc53d; }
 }
-.bug {
-  animation: scuttle 2.4s ease-in-out infinite alternate;
-}
-@keyframes scuttle {
-  from { transform: translateX(-24px); }
-  to { transform: translateX(24px); }
-}
 .eye {
   animation: blink 3.5s steps(1) infinite;
 }
 @keyframes blink {
   92%, 96% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enter, .strike, .flash, .swing, .sword, .ouch {
+    animation: none;
+  }
 }
 </style>

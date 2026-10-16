@@ -45,3 +45,44 @@ export const SPECIAL_MULTIPLIER = 3
 export const isSpecialFish = (weightG: number) => weightG >= SPECIAL_KG * 1000
 export const fishPrice = (weightG: number) =>
   Math.round((weightG / 1000) * GOLD_PER_KG * (isSpecialFish(weightG) ? SPECIAL_MULTIPLIER : 1))
+
+// Il crafting: con gli oggetti dell'inventario se ne fanno altri. Per ora c'è una ricetta sola,
+// la zuppa di pesce: 3 pesci qualsiasi, e il cuoco prende i più leggeri, così quelli grossi e
+// gli speciali restano da vendere. Nel dungeon la zuppa si beve da sola e cura heal punti vita.
+// Non si vende.
+export const FISH_SOUP = 'fish_soup'
+export type Recipe = { id: string; name: string; makes: string; fish: number; heal: number }
+export const RECIPES: Recipe[] = [{ id: 'fish_soup', name: 'Zuppa di pesce', makes: FISH_SOUP, fish: 3, heal: 30 }]
+export const recipe = (id: string) => RECIPES.find((r) => r.id === id)
+
+// Il ticket del dungeon: una volta su 15 sale dal lago insieme al pesce, dentro una bottiglia
+// (lo decide il game server, apps/game/src/fishing.ts). Ogni run nel dungeon ne usa uno.
+export const DUNGEON_TICKET = 'dungeon_ticket'
+
+// I materiali che lasciano i mostri del dungeon, per il crafting di armi e armature che verrà.
+// Tre rarità, e per ognuna un materiale per le armature e uno per le armi: comuni dai mostri
+// di tutte le ondate, non comuni da quelli delle ondate più avanti, rari quasi solo dal boss.
+export type Rarity = 'common' | 'uncommon' | 'rare'
+export const MATERIALS = [
+  { id: 'bug_hide', name: 'Pelle di bug', rarity: 'common', use: 'armor' },
+  { id: 'bug_fang', name: 'Zanna di bug', rarity: 'common', use: 'weapon' },
+  { id: 'web_silk', name: 'Seta di ragnatela', rarity: 'uncommon', use: 'armor' },
+  { id: 'cache_crystal', name: 'Cristallo di cache', rarity: 'uncommon', use: 'weapon' },
+  { id: 'incident_scale', name: 'Scaglia d\'incidente', rarity: 'rare', use: 'armor' },
+  { id: 'kernel_core', name: 'Nucleo del kernel', rarity: 'rare', use: 'weapon' },
+] as const satisfies readonly { id: string; name: string; rarity: Rarity; use: 'armor' | 'weapon' }[]
+export const RARITY_NAMES: Record<Rarity, string> = { common: 'Comune', uncommon: 'Non comune', rare: 'Raro' }
+
+// Gli scambi tra giocatori: oltre a monete e pesci si scambiano gli oggetti a quantità (zuppe,
+// ticket, materiali) e i cappelli comprati, che si hanno al massimo una volta. I colori no:
+// sono gratis per tutti.
+export const STACK_ITEMS: string[] = [FISH_SOUP, DUNGEON_TICKET, ...MATERIALS.map((m) => m.id)]
+export const isHat = (id: string) => HATS.some((h) => h.id === id)
+export const isTradable = (id: string) => STACK_ITEMS.includes(id) || isHat(id)
+
+// Il nome da mostrare di un oggetto dell'inventario (pesci esclusi: hanno la loro specie).
+export function itemName(id: string) {
+  if (id === FISH_SOUP) return recipe(FISH_SOUP)!.name
+  if (id === DUNGEON_TICKET) return 'Ticket in bottiglia'
+  return MATERIALS.find((m) => m.id === id)?.name ?? shopItem(id)?.name ?? id
+}

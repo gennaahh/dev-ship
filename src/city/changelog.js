@@ -8,6 +8,11 @@ export const CHANGELOG = [
   {
     date: '2026-10-16',
     items: [
+      { tag: 'new', backend: true, text: 'Scambi tra giocatori! In piazza e al lago, tasto destro su un altro giocatore (sul telefono tieni premuto) e "Richiedi scambio". Se accetta, ognuno mette nella sua metà monete, pesci, zuppe, ticket, materiali e cappelli, e poi la doppia conferma: tutti e due "Pronto", poi tutti e due "Conferma scambio". Se uno cambia l\'offerta, le conferme ripartono da capo.' },
+      { tag: 'new', backend: true, text: 'Il dungeon è aperto! Si entra con un ticket e 100 HP, e arrivano ondate di bug sempre più forti, con un boss ogni 5 ondate. Va tutto da solo: si guarda la run e basta. I mostri lasciano monete e materiali per le armi e le armature che arriveranno (pelli, zanne, seta, cristalli e due rari dal boss), e si tengono anche quando si perde.' },
+      { tag: 'new', backend: true, text: 'Al lago, una volta su 15, insieme al pesce sale una bottiglia: dentro c\'è il ticket per il dungeon. Ticket e materiali stanno nell\'inventario.' },
+      { tag: 'new', backend: true, text: 'Crafting! In alto a destra, di fianco allo zainetto, c\'è la pentola (o il tasto R): con 3 pesci si cucina una zuppa di pesce. Il cuoco usa i pesci più leggeri, così quelli grossi e gli speciali restano da vendere. Nel dungeon la zuppa si beve da sola sotto i 50 HP e ne ridà 30: più zuppe, più ondate e più bottino, e rende più che vendere i pesci.' },
+      { tag: 'new', text: 'Nel dungeon senza login si può guardare una run di prova, con 3 zuppe e senza premi.' },
       { tag: 'new', backend: true, text: 'I colori del personaggio ora sono tutti gratis: niente più nello shop, si scelgono quando si vuole dalla finestra del personaggio (tasto C). Allo shop restano i cappelli.' },
       { tag: 'new', backend: true, text: 'Personaggio e inventario ora sono due finestre. Il proprio personaggio in alto a destra (o il tasto C) apre la finestra del personaggio, con cosa si indossa e il guardaroba di cappelli e colori; lo zainetto di fianco (o il tasto I) apre l\'inventario, con le monete e i pesci da vendere.' },
       { tag: 'new', text: 'Tre cappelli nuovi nello shop della piazza, col cartellino NOVITÀ: il cappellino arcobaleno con l\'elica che gira, il berretto da capitano e il cappello da mago.' },

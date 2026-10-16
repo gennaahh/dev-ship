@@ -85,6 +85,9 @@ export function rollCatch() {
   return Math.round(kg * 10) / 10
 }
 
+// Come sul server: una volta su 15 col pesce sale una bottiglia col ticket del dungeon.
+export const BOTTLE_CHANCE = 1 / 15
+
 // Classifica dimostrativa, per il sito senza backend: l'equipaggio della classifica della città.
 const row = (name, fish, biggestKg, points) => ({ name, fish, biggestKg, points })
 const ago = (minutes) => new Date(Date.now() - minutes * 60_000).toISOString()

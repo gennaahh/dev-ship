@@ -24,9 +24,10 @@ export const fishCatch = pgTable(
 )
 
 // Gli oggetti nell'inventario dei giocatori. itemId è un id del catalogo
-// (packages/shared/src/catalog.ts): un cappello, un colore o 'fish'. I pesci li aggiunge il
-// game server a ogni cattura, ognuno col suo peso, e venduti spariscono (in classifica restano).
-// Cappelli e colori si hanno una volta sola.
+// (packages/shared/src/catalog.ts). I pesci sono una riga ciascuno, col loro peso: li aggiunge
+// il game server a ogni cattura, e venduti o cucinati spariscono (in classifica restano).
+// Tutto il resto è una riga sola per giocatore, con quantity: cappelli e colori 1, zuppe
+// (dal crafting), ticket del dungeon (dalla pesca) e materiali (dal dungeon) quanti se ne hanno.
 export const playerItem = pgTable(
   'player_item',
   {
@@ -38,6 +39,7 @@ export const playerItem = pgTable(
     // Solo per i pesci: il peso in grammi e la cattura da cui vengono.
     weightG: integer(),
     catchId: integer().references(() => fishCatch.id, { onDelete: 'set null' }),
+    quantity: integer().notNull().default(1),
     acquiredAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -47,7 +49,8 @@ export const playerItem = pgTable(
 )
 
 // Le monete d'oro: ogni movimento è una riga, il saldo è la somma. Le righe non si cambiano
-// né si cancellano. reason: 'sell' (vendita di un pesce) o 'buy' (acquisto allo shop).
+// né si cancellano. reason: 'sell' (vendita di un pesce), 'buy' (acquisto allo shop) o
+// 'dungeon' (monete raccolte in una run, itemId 'dungeon_ticket').
 export const goldLedger = pgTable(
   'gold_ledger',
   {

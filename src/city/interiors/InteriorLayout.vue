@@ -80,7 +80,7 @@ onUnmounted(() => {
       <slot />
     </div>
 
-    <button class="back" @click="emit('leave')">← Torna in città</button>
+    <button class="back" aria-label="Torna in città" @click="emit('leave')">←<span class="back-text"> Torna in città</span></button>
 
     <div
       class="card"
@@ -147,6 +147,12 @@ onUnmounted(() => {
 .back:active {
   translate: 0 3px;
   box-shadow: 0 1px 0 #2d2a4a;
+}
+/* Sui telefoni più stretti basta la freccia: lascia posto ai pulsanti in alto a destra. */
+@media (max-width: 440px) {
+  .back-text {
+    display: none;
+  }
 }
 .card {
   position: absolute;
