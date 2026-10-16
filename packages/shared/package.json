@@ -1,0 +1,8 @@
+{
+  "name": "@dev-city/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./catalog": "./src/catalog.ts"
+  }
+}

@@ -1,0 +1,96 @@
+import { FISH, fishPrice, shopItem, type Slot } from '@dev-city/shared/catalog'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { db } from './db/index.ts'
+import { goldLedger, playerEquipment, playerItem, user } from './db/schema.ts'
+
+// Inventario, monete d'oro ed equipaggiamento dei giocatori. Ogni operazione restituisce
+// l'inventario aggiornato, così lo schermo si ridisegna con una risposta sola.
+// I prezzi sono quelli del catalogo condiviso (packages/shared/src/catalog.ts).
+
+// Un errore da mostrare al giocatore, col codice HTTP della risposta.
+export class InventoryError extends Error {
+  constructor(
+    readonly status: 400 | 402 | 404 | 409,
+    message: string,
+  ) {
+    super(message)
+  }
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+const goldOf = async (tx: Tx | typeof db, userId: string) => {
+  const [row] = await tx
+    .select({ gold: sql<number>`coalesce(sum(${goldLedger.amount}), 0)::int` })
+    .from(goldLedger)
+    .where(eq(goldLedger.userId, userId))
+  return row.gold
+}
+
+export async function inventoryOf(userId: string) {
+  const [gold, items, [equipment]] = await Promise.all([
+    goldOf(db, userId),
+    db
+      .select({ id: playerItem.id, itemId: playerItem.itemId, weightG: playerItem.weightG, acquiredAt: playerItem.acquiredAt })
+      .from(playerItem)
+      .where(eq(playerItem.userId, userId))
+      .orderBy(desc(playerItem.acquiredAt), desc(playerItem.id)),
+    db.select({ hat: playerEquipment.hat, color: playerEquipment.color }).from(playerEquipment).where(eq(playerEquipment.userId, userId)),
+  ])
+  return {
+    gold,
+    items: items.map(({ weightG, ...item }) => ({
+      ...item,
+      weightKg: weightG === null ? null : weightG / 1000,
+      price: weightG === null ? null : fishPrice(weightG),
+    })),
+    equipment: { hat: equipment?.hat ?? null, color: equipment?.color ?? null },
+  }
+}
+
+// Vende i pesci indicati (solo quelli che sono davvero suoi). Cancellarli e accreditare
+// l'oro stanno nella stessa transazione: due vendite insieme dello stesso pesce non pagano due volte.
+export async function sellFish(userId: string, ids: number[]) {
+  await db.transaction(async (tx) => {
+    const sold = await tx
+      .delete(playerItem)
+      .where(and(eq(playerItem.userId, userId), eq(playerItem.itemId, FISH), inArray(playerItem.id, ids)))
+      .returning({ weightG: playerItem.weightG })
+    if (!sold.length) throw new InventoryError(404, 'Questi pesci non ci sono più.')
+    await tx.insert(goldLedger).values(sold.map((f) => ({ userId, amount: fishPrice(f.weightG ?? 0), reason: 'sell', itemId: FISH })))
+  })
+  return inventoryOf(userId)
+}
+
+const owns = async (tx: Tx | typeof db, userId: string, itemId: string) =>
+  (await tx.select({ id: playerItem.id }).from(playerItem).where(and(eq(playerItem.userId, userId), eq(playerItem.itemId, itemId))).limit(1)).length > 0
+
+// Compra un cappello o un colore. La riga del giocatore resta bloccata fino alla fine: due
+// acquisti insieme non spendono le stesse monete e il saldo non va mai sotto zero.
+export async function buy(userId: string, itemId: string) {
+  const item = shopItem(itemId)
+  if (!item) throw new InventoryError(404, 'Questo oggetto non è in vendita.')
+  if (item.price === 0) throw new InventoryError(409, 'Ce l\'hai già: è gratis.')
+  await db.transaction(async (tx) => {
+    await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for('update')
+    if (await owns(tx, userId, itemId)) throw new InventoryError(409, 'Ce l\'hai già.')
+    if ((await goldOf(tx, userId)) < item.price) throw new InventoryError(402, 'Non hai abbastanza monete.')
+    await tx.insert(goldLedger).values({ userId, amount: -item.price, reason: 'buy', itemId })
+    await tx.insert(playerItem).values({ userId, itemId })
+  })
+  return inventoryOf(userId)
+}
+
+// Indossa un oggetto (suo, o gratis) nel posto giusto, oppure lo toglie con itemId null.
+export async function equip(userId: string, slot: Slot, itemId: string | null) {
+  if (itemId !== null) {
+    const item = shopItem(itemId)
+    if (!item || item.kind !== slot) throw new InventoryError(400, 'Questo oggetto non va lì.')
+    if (item.price > 0 && !(await owns(db, userId, itemId))) throw new InventoryError(404, 'Non ce l\'hai: si compra allo shop.')
+  }
+  await db
+    .insert(playerEquipment)
+    .values({ userId, [slot]: itemId })
+    .onConflictDoUpdate({ target: playerEquipment.userId, set: { [slot]: itemId } })
+  return inventoryOf(userId)
+}

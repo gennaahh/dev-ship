@@ -1,20 +1,43 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useInventory } from '../composables/useInventory.js'
+import { BACKEND_ENABLED } from '../config.js'
 import Avatar from './Avatar.vue'
-import { COLORS, HATS } from './avatar.js'
+import { COLORS, HATS, lookOf } from './avatar.js'
 
-// Catalogo dello shop della piazza. Comprare non si può ancora (mancano monete e salvataggio
-// del look): si provano colori e cappelli sull'anteprima, il proprio personaggio non cambia.
+// Catalogo dello shop della piazza: si provano colori e cappelli sull'anteprima e, da loggati,
+// si comprano con le monete d'oro e si indossano. Senza login (o senza backend) si prova soltanto.
 const props = defineProps({
-  look: { type: Object, required: true },
+  // Il nome del giocatore, null senza login.
+  name: { type: String, default: null },
 })
 const emit = defineEmits(['close'])
 
-const dialog = ref(null)
-const preview = ref({ ...props.look })
+const inventory = useInventory()
+const { equipment, gold, busy, error } = inventory
+const canBuy = computed(() => props.name !== null && inventory.ready.value)
 
-const tryColor = (c) => (preview.value = { ...preview.value, color: c.value })
-const tryHat = (h) => (preview.value = { ...preview.value, hat: preview.value.hat === h.id ? null : h.id })
+const dialog = ref(null)
+// Cosa si sta provando, come l'equipaggiamento: id del catalogo, null = niente.
+const preview = ref({ ...equipment.value })
+const look = computed(() => lookOf(props.name, preview.value))
+
+const toggle = (slot, id) => (preview.value = { ...preview.value, [slot]: preview.value[slot] === id ? null : id })
+
+// Quello che si sta provando e non si indossa ancora: da indossare, o prima da comprare.
+const changes = computed(() =>
+  ['color', 'hat']
+    .filter((slot) => preview.value[slot] !== equipment.value[slot])
+    .map((slot) => {
+      const item = (slot === 'hat' ? HATS : COLORS).find((i) => i.id === preview.value[slot]) ?? null
+      const label = item?.name ?? (slot === 'hat' ? 'Senza cappello' : 'Il tuo colore di sempre')
+      return { slot, item, label, owned: !item || inventory.owns(item) }
+    }),
+)
+async function apply({ slot, item, owned }) {
+  if (!owned && !(await inventory.buy(item.id))) return
+  await inventory.equip(slot, item?.id ?? null)
+}
 
 onMounted(() => dialog.value.showModal())
 // Esc chiude il catalogo e basta: preventDefault dice all'interno di non usarlo per uscire.
@@ -29,16 +52,30 @@ function onKeydown(e) {
   <dialog ref="dialog" class="shop" aria-labelledby="shop-title" @keydown="onKeydown" @click.self="emit('close')" @close="emit('close')">
     <header>
       <h2 id="shop-title">Shop della piazza</h2>
-      <span class="soon">PRESTO</span>
+      <span v-if="canBuy" class="gold" title="Monete d'oro">🪙 {{ gold }}</span>
+      <span v-else class="soon">SOLO PROVA</span>
       <button class="x" aria-label="Chiudi lo shop" @click="emit('close')">✕</button>
     </header>
 
     <div class="body">
       <div class="preview">
         <svg viewBox="-70 -150 140 175" aria-hidden="true">
-          <Avatar :look="preview" />
+          <Avatar :look="look" />
         </svg>
-        <p>Prova pure: per comprare serviranno le monete, in arrivo.</p>
+        <template v-if="canBuy">
+          <ul v-if="changes.length" class="changes">
+            <li v-for="c in changes" :key="c.slot">
+              <span>{{ c.label }}</span>
+              <button v-if="c.owned" class="buy" :disabled="busy" @click="apply(c)">Indossa</button>
+              <button v-else-if="gold >= c.item.price" class="buy" :disabled="busy" @click="apply(c)">Compra · 🪙 {{ c.item.price }}</button>
+              <span v-else class="short">Mancano 🪙 {{ c.item.price - gold }}</span>
+            </li>
+          </ul>
+          <p v-else>È il tuo look. Scegli un colore o un cappello per provarlo.</p>
+          <p v-if="error" class="error" role="alert">{{ error }}</p>
+        </template>
+        <p v-else-if="BACKEND_ENABLED">Prova pure: per comprare serve il login, e le monete si guadagnano vendendo i pesci.</p>
+        <p v-else>Prova pure: per comprare serviranno le monete, in arrivo.</p>
       </div>
 
       <div class="items">
@@ -48,22 +85,23 @@ function onKeydown(e) {
             v-for="c in COLORS"
             :key="c.id"
             class="swatch"
-            :class="{ on: preview.color === c.value }"
+            :class="{ on: preview.color === c.id }"
             :style="{ background: c.value }"
-            :title="`${c.name} · ${c.price ? `${c.price} monete` : 'gratis'}`"
+            :title="`${c.name} · ${canBuy && inventory.owns(c) ? 'tuo' : c.price ? `${c.price} monete` : 'gratis'}`"
             :aria-label="c.name"
-            @click="tryColor(c)"
+            @click="toggle('color', c.id)"
           />
         </div>
 
         <h3>Cappelli</h3>
         <div class="hats">
-          <button v-for="h in HATS" :key="h.id" class="hat" :class="{ on: preview.hat === h.id }" @click="tryHat(h)">
+          <button v-for="h in HATS" :key="h.id" class="hat" :class="{ on: preview.hat === h.id }" @click="toggle('hat', h.id)">
             <svg viewBox="-55 -135 110 100" aria-hidden="true">
-              <Avatar :look="{ color: preview.color, hat: h.id }" />
+              <Avatar :look="{ color: look.color, hat: h.id }" />
             </svg>
             <span class="hat-name">{{ h.name }}</span>
-            <span class="price">🪙 {{ h.price }}</span>
+            <span v-if="canBuy && inventory.owns(h)" class="price owned">{{ equipment.hat === h.id ? 'Indossato ✓' : 'Tuo ✓' }}</span>
+            <span v-else class="price">🪙 {{ h.price }}</span>
           </button>
         </div>
       </div>
@@ -109,6 +147,14 @@ h2 {
   font-size: 15px;
   rotate: -4deg;
 }
+.gold {
+  padding: 3px 12px 5px;
+  border: 3px solid #2d2a4a;
+  border-radius: 10px;
+  background: #ffd54a;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
 .x {
   margin-left: auto;
   width: 40px;
@@ -144,6 +190,50 @@ h2 {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 14px;
   line-height: 1.35;
+}
+.preview .error {
+  color: #c0262d;
+  font-weight: 600;
+}
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.changes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 15px;
+}
+.buy {
+  flex: none;
+  padding: 3px 10px 5px;
+  border: 3px solid #2d2a4a;
+  border-radius: 10px;
+  background: #9ccc65;
+  box-shadow: 0 2px 0 #2d2a4a;
+  color: #2d2a4a;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.buy:active {
+  translate: 0 2px;
+  box-shadow: none;
+}
+.buy:disabled {
+  cursor: progress;
+}
+.short {
+  flex: none;
+  color: #c0262d;
+  font-size: 14px;
 }
 h3 {
   margin: 0 0 8px;
@@ -208,6 +298,9 @@ h3 {
   margin-top: 2px;
   font-size: 14px;
   color: #9c6332;
+}
+.price.owned {
+  color: #6b4bd8;
 }
 @media (max-width: 600px) {
   .body {

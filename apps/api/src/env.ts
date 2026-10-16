@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // Configurazione dell'API, validata all'avvio: se manca qualcosa il processo si ferma subito
 // con un errore chiaro. I default valgono per lo sviluppo locale (docker-compose.yml).
-const isProduction = process.env.NODE_ENV === 'production'
+export const isProduction = process.env.NODE_ENV === 'production'
 // Obbligatoria in produzione, con un default solo in sviluppo.
 const devOnly = (schema: z.ZodString, fallback: string) =>
   isProduction ? schema : schema.default(fallback)

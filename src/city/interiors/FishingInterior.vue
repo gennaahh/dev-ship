@@ -4,9 +4,10 @@ import { authClient, displayName } from '../../auth.js'
 import ChatWindow from '../../components/ChatWindow.vue'
 import { useFishingLeaderboard } from '../../composables/useFishingLeaderboard.js'
 import { useFishingRoom } from '../../composables/useFishingRoom.js'
+import { useInventory } from '../../composables/useInventory.js'
 import { BACKEND_ENABLED } from '../../config.js'
 import Avatar from '../Avatar.vue'
-import { colorFor, DEFAULT_LOOK } from '../avatar.js'
+import { DEFAULT_LOOK, lookOf } from '../avatar.js'
 import Angler from '../fishing/Angler.vue'
 import BigCatch from '../fishing/BigCatch.vue'
 import FishingBoard from '../fishing/FishingBoard.vue'
@@ -29,7 +30,9 @@ const myName = computed(() => {
   const user = session.value.data?.user
   return user ? displayName(user) : 'Tu'
 })
-const myLook = computed(() => (session.value.data?.user ? { color: colorFor(myName.value), hat: null } : DEFAULT_LOOK))
+// Il proprio look viene dall'inventario, così cambia subito; quello degli altri dalla stanza.
+const inventory = useInventory()
+const myLook = computed(() => (session.value.data?.user ? lookOf(myName.value, inventory.equipment.value) : DEFAULT_LOOK))
 
 const { board, failed, refreshSoon } = useFishingLeaderboard()
 
@@ -138,7 +141,7 @@ const anglers = computed(() => {
   return new Map(
     lake.seats.value.map((s) => [
       s.seat,
-      { ...s, look: s.me ? myLook.value : { color: colorFor(s.name), hat: null }, say: byId.get(s.id)?.say ?? '', typing: byId.get(s.id)?.typing ?? false },
+      { ...s, look: s.me ? myLook.value : lookOf(s.name, byId.get(s.id)), say: byId.get(s.id)?.say ?? '', typing: byId.get(s.id)?.typing ?? false },
     ]),
   )
 })
@@ -148,7 +151,7 @@ const walkers = computed(() => {
   const seated = new Set(lake.seats.value.map((s) => s.id))
   return lake.players.value
     .filter((p) => !seated.has(p.id))
-    .map((p) => ({ ...p, look: p.me ? myLook.value : { color: colorFor(p.name), hat: null } }))
+    .map((p) => ({ ...p, look: p.me ? myLook.value : lookOf(p.name, p) }))
 })
 const mine = computed(() => (online.value ? lake.seats.value.find((s) => s.me) : null))
 const freeSeats = computed(() => SEAT_SPOTS.length - anglers.value.size)

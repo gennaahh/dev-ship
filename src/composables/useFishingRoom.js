@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { clampToLakeside } from '../city/fishing/lake.js'
+import { useInventory } from './useInventory.js'
 import { useWalkingRoom } from './useWalkingRoom.js'
 
 // La zona di pesca multigiocatore: si cammina e si chiacchiera come in piazza (useWalkingRoom),
@@ -9,6 +10,7 @@ import { useWalkingRoom } from './useWalkingRoom.js'
 export function useFishingRoom({ onCatch, onSeatTaken } = {}) {
   // Una voce per sedia occupata: { seat, id (sessionId), name, phase, since, weight, me }.
   const seats = ref([])
+  const inventory = useInventory()
 
   const walk = useWalkingRoom('fishing', {
     clamp: (x, y) => clampToLakeside({ x, y }),
@@ -22,6 +24,8 @@ export function useFishingRoom({ onCatch, onSeatTaken } = {}) {
       })
       r.onMessage('catch', (c) => onCatch?.({ ...c, mine: c.from === r.sessionId }))
       r.onMessage('seatTaken', () => onSeatTaken?.())
+      // Il proprio pesce è salvato nell'inventario.
+      r.onMessage('inventory', () => inventory.refresh())
     },
     onLeave: () => (seats.value = []),
   })

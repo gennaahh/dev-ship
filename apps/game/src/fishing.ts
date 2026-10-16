@@ -1,4 +1,4 @@
-import { SQL } from 'bun'
+import { sql } from './db.ts'
 
 // Regole della pesca: funzioni pure, separate dalla Room, più il salvataggio delle catture.
 // Il lago, le sedie e come ci si cammina attorno stanno in lake.ts.
@@ -37,14 +37,16 @@ export function rollCatch(): number | null {
 
 export const pointsFor = (kg: number) => Math.round(kg * POINTS_PER_KG)
 
-// Le catture vanno in PostgreSQL (tabella fish_catch, migrazione dell'API): la classifica la
-// calcola l'API. Se il database non risponde si pesca lo stesso, ma la cattura non resta.
-const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://devcity:devcity@localhost:5432/devcity'
-const sql = new SQL(DATABASE_URL)
-
+// Le catture vanno in PostgreSQL: in fish_catch per la classifica (la calcola l'API) e il
+// pesce nell'inventario (player_item, 'fish' è il suo id nel catalogo di packages/shared).
+// Se il database non risponde si pesca lo stesso, ma la cattura non resta.
 export async function saveCatch(userId: string, kg: number) {
+  const grams = Math.round(kg * 1000)
   try {
-    await sql`insert into fish_catch (user_id, weight_g, points) values (${userId}, ${Math.round(kg * 1000)}, ${pointsFor(kg)})`
+    await sql.begin(async (tx) => {
+      const [c] = await tx`insert into fish_catch (user_id, weight_g, points) values (${userId}, ${grams}, ${pointsFor(kg)}) returning id`
+      await tx`insert into player_item (user_id, item_id, weight_g, catch_id) values (${userId}, 'fish', ${grams}, ${c.id})`
+    })
     return true
   } catch (e) {
     console.error('Cattura non salvata:', e)

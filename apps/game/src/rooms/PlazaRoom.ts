@@ -2,6 +2,7 @@ import { Room, ServerError, validate, type Client } from '@colyseus/core'
 import { z } from 'zod'
 import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { ChatInput, cleanText, createMessage, history, RateLimit, TypingInput } from '../chat.ts'
+import { loadLook, refreshLook } from '../db.ts'
 import { clampToPlaza, plazaEntrance, walkToward } from '../movement.ts'
 import { PlazaPlayer, PlazaState } from './PlazaState.ts'
 
@@ -37,6 +38,8 @@ export class PlazaRoom extends Room<{ state: PlazaState; client: Client<{ auth: 
       const player = this.state.players.get(client.sessionId)
       if (player) player.typing = typing
     }),
+    // Ha cambiato equipaggiamento: si rilegge dal database.
+    look: (client: Client<{ auth: PlayerAuth }>) => refreshLook(this.clients, this.state.players, client.auth!.userId),
     history: async (client: Client) => {
       client.send('history', await history.list(this.historyKey))
     },
@@ -75,6 +78,8 @@ export class PlazaRoom extends Room<{ state: PlazaState; client: Client<{ auth: 
     Object.assign(player, from)
     this.state.players.set(client.sessionId, player)
     this.targets.set(client.sessionId, to)
+    // Si entra subito; il look arriva appena letto.
+    loadLook(client.auth!.userId).then((look) => Object.assign(player, look))
   }
 
   // Connessione persa senza uscire: il posto resta riservato per qualche secondo.

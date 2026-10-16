@@ -1,7 +1,8 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 
-// Pulsante in alto a destra per mettere e togliere lo schermo intero del browser.
+// Pulsante in alto a destra per mettere e togliere lo schermo intero del browser (la posizione
+// la decide App.vue, di fianco al proprio personaggio).
 // Dove il browser non lo permette (es. iPhone) non compare.
 const supported = document.fullscreenEnabled
 const active = ref(Boolean(document.fullscreenElement))
@@ -34,11 +35,6 @@ function toggle() {
 
 <style scoped>
 .fullscreen {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  /* Come l'account e le spie: sopra la città e sopra gli interni (z-index 100). */
-  z-index: 150;
   display: grid;
   place-items: center;
   width: 52px;

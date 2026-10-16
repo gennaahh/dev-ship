@@ -86,7 +86,8 @@ watch(
 
 const onKey = (e) => {
   // defaultPrevented: Esc già usato da altri (es. per chiudere la finestra del login).
-  if (e.key === 'Escape' && !e.defaultPrevented) unzoom()
+  // Con una finestra aperta (inventario) Esc chiude lei, anche se il focus non c'è più.
+  if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('dialog[open]')) unzoom()
 }
 onMounted(() => {
   addEventListener('resize', onResize)
@@ -224,7 +225,8 @@ const boxStyle = (b) => ({ left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`,
 .close {
   position: fixed;
   top: 16px;
-  right: 80px; /* a destra c'è il pulsante dello schermo intero */
+  left: 50%; /* a destra ci sono il proprio personaggio e lo schermo intero */
+  translate: -50% 0;
   z-index: 50;
   padding: 10px 16px 12px;
   border: 4px solid #2d2a4a;
@@ -237,7 +239,7 @@ const boxStyle = (b) => ({ left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`,
   cursor: pointer;
 }
 .close:active {
-  translate: 0 3px;
+  translate: -50% 3px;
   box-shadow: 0 1px 0 #2d2a4a;
 }
 .fade-enter-active,

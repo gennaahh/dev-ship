@@ -6,6 +6,9 @@ import ServiceStatus from './components/ServiceStatus.vue'
 import CityView from './city/CityView.vue'
 import DevShipFullscreen from './components/DevShipFullscreen.vue'
 import FullscreenButton from './components/FullscreenButton.vue'
+import InventoryWindow from './components/InventoryWindow.vue'
+import PlayerBadge from './components/PlayerBadge.vue'
+import { useInventory } from './composables/useInventory.js'
 import { BACKEND_ENABLED } from './config.js'
 import { PLACES } from './city/places.js'
 
@@ -36,6 +39,8 @@ const chatChannel = computed(() => place.value?.id ?? 'city')
 // Col cartellone zoomato la chat della città si ripiega, per non coprirne l'angolo.
 const boardZoomed = ref(false)
 const chatTitle = computed(() => (place.value ? `Chat: ${place.value.name}` : 'Chat della città'))
+
+const inventory = useInventory()
 </script>
 
 <template>
@@ -52,8 +57,13 @@ const chatTitle = computed(() => (place.value ? `Chat: ${place.value.name}` : 'C
       <ServiceStatus />
     </div>
     <AreaChat v-if="!OWN_CHAT.includes(chatChannel)" :key="chatChannel" :channel="chatChannel" :title="chatTitle" :corner="place ? 'bottom' : 'top'" :fold="!place && boardZoomed" />
+    <InventoryWindow v-if="inventory.open.value" @close="inventory.open.value = false" />
   </template>
-  <FullscreenButton />
+  <!-- In alto a destra il proprio personaggio (apre l'inventario) e lo schermo intero. -->
+  <div class="corner">
+    <PlayerBadge v-if="BACKEND_ENABLED" />
+    <FullscreenButton />
+  </div>
   <DevShipFullscreen v-if="fullscreen" @close="fullscreen = false" />
 </template>
 
@@ -98,6 +108,14 @@ html, body {
     right: 16px;
     translate: none;
   }
+}
+.corner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 150;
+  display: flex;
+  gap: 12px;
 }
 .interior-enter-active {
   transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.3, 1);

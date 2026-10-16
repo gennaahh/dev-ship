@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "bunx --bun vite",
@@ -19,6 +20,7 @@
     "preview": "bunx --bun vite preview"
   },
   "dependencies": {
+    "@dev-city/shared": "workspace:*",
     "@colyseus/sdk": "^0.18.4",
     "better-auth": "^1.7.7",
     "vue": "^3.5.0"

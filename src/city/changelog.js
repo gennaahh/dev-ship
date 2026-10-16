@@ -8,6 +8,9 @@ export const CHANGELOG = [
   {
     date: '2026-10-15',
     items: [
+      { tag: 'new', backend: true, text: 'Inventario! In alto a destra c\'è il proprio personaggio con nome e monete d\'oro: un clic (o il tasto I) apre l\'inventario, coi pesci presi, i cappelli, i colori e cosa si indossa.' },
+      { tag: 'new', backend: true, text: 'I pesci presi finiscono nell\'inventario, ognuno col suo peso (anche quelli presi finora), e si vendono: 1 moneta d\'oro per chilo, il triplo per i pesci speciali da 5 kg in su. In classifica restano.' },
+      { tag: 'new', backend: true, text: 'Allo shop della piazza si compra davvero: colori e cappelli si pagano con le monete e si indossano subito. Tutti li vedono, in piazza e al lago.' },
       { tag: 'new', backend: true, text: 'Si entra con GitHub: un clic su "Accedi con GitHub" e si torna in città già dentro. Niente più codici via email.' },
     ],
   },

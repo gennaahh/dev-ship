@@ -128,7 +128,11 @@
               "status": "done"
             },
             "apps/web",
-            "packages/shared e packages/domain"
+            {
+              "title": "packages/shared (catalogo degli oggetti)",
+              "status": "done"
+            },
+            "packages/domain"
           ]
         },
         "Spostare il frontend Vue in apps/web senza rompere build e deploy su Netlify",
@@ -274,14 +278,33 @@
       "id": "inventory",
       "title": "Gestire inventario e oggetti",
       "description": "Catalogo degli oggetti e oggetti posseduti dai giocatori.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
         "Modellare il catalogo (item_definitions: tipo, rarità, impilabile, metadati)",
-        "Modellare gli oggetti posseduti (player_items con quantità)",
-        "Collegare gli oggetti ai luoghi della città (gemme dalla miniera, bug dal dungeon, pesci dalla pesca)",
-        "Esporre lettura dell'inventario ed equipaggiamento",
+        {
+          "title": "Modellare gli oggetti posseduti (player_item: un pesce per riga col suo peso, cappelli e colori una volta sola)",
+          "status": "done"
+        },
+        {
+          "title": "Collegare gli oggetti ai luoghi della città",
+          "steps": [
+            {
+              "title": "Pesci dalla pesca",
+              "status": "done"
+            },
+            "Gemme dalla miniera",
+            "Bug dal dungeon"
+          ]
+        },
+        {
+          "title": "Esporre lettura dell'inventario ed equipaggiamento (GET /api/inventory, POST /api/inventory/equip)",
+          "status": "done"
+        },
         "Caricare l'equipaggiamento nel dungeon all'ingresso e salvarlo all'uscita",
-        "Rendere atomiche le operazioni di aggiunta e rimozione (transazioni)",
+        {
+          "title": "Rendere atomiche le operazioni di aggiunta e rimozione (transazioni)",
+          "status": "done"
+        },
         "Permettere agli admin di assegnare o togliere oggetti"
       ]
     },
@@ -289,15 +312,34 @@
       "id": "economy",
       "title": "Gestire valuta e acquisti",
       "description": "Portafoglio dei giocatori, registro movimenti e negozio.",
-      "status": "todo",
+      "status": "in_progress",
       "steps": [
-        "Definire le valute del gioco",
-        "Modellare un registro movimenti immutabile (ledger) da cui derivare il saldo",
-        "Creare il catalogo del negozio con prezzi",
-        "Implementare l'acquisto in una sola transazione (scala la valuta, aggiunge l'oggetto)",
+        {
+          "title": "Definire le valute del gioco (monete d'oro)",
+          "status": "done"
+        },
+        {
+          "title": "Modellare un registro movimenti immutabile (gold_ledger) da cui derivare il saldo",
+          "status": "done"
+        },
+        {
+          "title": "Creare il catalogo del negozio con prezzi (packages/shared/src/catalog.ts)",
+          "status": "done"
+        },
+        {
+          "title": "Implementare l'acquisto in una sola transazione (scala la valuta, aggiunge l'oggetto)",
+          "status": "done"
+        },
         "Rendere idempotenti gli acquisti con una chiave di idempotenza",
-        "Impedire saldi negativi e acquisti concorrenti doppi",
-        "Esporre lo storico dei movimenti al giocatore"
+        {
+          "title": "Impedire saldi negativi e acquisti concorrenti doppi",
+          "status": "done"
+        },
+        "Esporre lo storico dei movimenti al giocatore",
+        {
+          "title": "Vendere i pesci per monete d'oro (POST /api/inventory/sell, 1 moneta al chilo, il triplo da 5 kg in su)",
+          "status": "done"
+        }
       ]
     },
     {
@@ -536,7 +578,10 @@
           "title": "Mostrare la chat di area dentro gli interni dei luoghi",
           "status": "done"
         },
-        "Mostrare inventario e valuta del giocatore",
+        {
+          "title": "Mostrare inventario e valuta del giocatore",
+          "status": "done"
+        },
         {
           "title": "Mantenere funzionante la modalità senza backend (demo: build senza VITE_API_URL e VITE_GAME_URL)",
           "status": "done"

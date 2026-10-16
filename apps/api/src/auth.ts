@@ -3,7 +3,8 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { jwt } from 'better-auth/plugins'
 import { db } from './db/index.ts'
 import * as schema from './db/schema.ts'
-import { env, isAllowedOrigin } from './env.ts'
+import { devLogin } from './dev-login.ts'
+import { env, isAllowedOrigin, isProduction } from './env.ts'
 
 // Chi si vede nelle stanze: il nome del profilo o, finché non c'è, la parte prima della @.
 export const displayName = (user: { name?: string | null; email: string }) =>
@@ -44,5 +45,7 @@ export const auth = betterAuth({
         definePayload: ({ user }) => ({ name: displayName(user) }),
       },
     }),
+    // In sviluppo si entra anche solo con un nome (POST /api/auth/sign-in/dev), senza GitHub.
+    ...(isProduction ? [] : [devLogin()]),
   ],
 })

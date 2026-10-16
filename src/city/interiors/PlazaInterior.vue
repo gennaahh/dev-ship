@@ -3,9 +3,10 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { authClient, displayName } from '../../auth.js'
 import ChatWindow from '../../components/ChatWindow.vue'
 import { usePlazaRoom } from '../../composables/usePlazaRoom.js'
+import { useInventory } from '../../composables/useInventory.js'
 import { BACKEND_ENABLED } from '../../config.js'
 import Avatar from '../Avatar.vue'
-import { colorFor, DEFAULT_LOOK } from '../avatar.js'
+import { DEFAULT_LOOK, lookOf } from '../avatar.js'
 import ShopCatalog from '../ShopCatalog.vue'
 import SpeechBubble from '../SpeechBubble.vue'
 import InteriorLayout from './InteriorLayout.vue'
@@ -13,10 +14,13 @@ import InteriorLayout from './InteriorLayout.vue'
 defineProps({ place: { type: Object, required: true } })
 defineEmits(['leave'])
 
-const plans = [
-  'Allo shop si compreranno colori e cappelli per il proprio personaggio.',
-  'Le monete si guadagneranno in città: gemme, bug chiusi e pesci.',
-]
+// Senza backend non ci sono monete: lo shop fa solo provare.
+const plans = BACKEND_ENABLED
+  ? [
+      'Allo shop si comprano colori e cappelli con le monete d\'oro: si guadagnano vendendo i pesci.',
+      'Quello che si compra finisce nell\'inventario (tasto I o il proprio personaggio in alto a destra).',
+    ]
+  : ['Allo shop si provano colori e cappelli per il proprio personaggio.', 'Le monete si guadagneranno in città: gemme, bug chiusi e pesci.']
 
 // La piazza vista come le stanze di Club Penguin: camera alta e frontale, pavimento che sale
 // verso il fondo, personaggi della stessa misura ovunque. Si cammina cliccando dove andare.
@@ -34,7 +38,9 @@ const myName = computed(() => {
   const user = session.value.data?.user
   return user ? displayName(user) : 'Tu'
 })
-const myLook = computed(() => (session.value.data?.user ? { color: colorFor(myName.value), hat: null } : DEFAULT_LOOK))
+// Il proprio look viene dall'inventario, così cambia subito; quello degli altri dalla stanza.
+const inventory = useInventory()
+const myLook = computed(() => (session.value.data?.user ? lookOf(myName.value, inventory.equipment.value) : DEFAULT_LOOK))
 
 // Da loggati la piazza è multigiocatore: i personaggi e la chat arrivano dalla stanza della
 // piazza. Senza backend, prima del login o col server spento si passeggia da soli tra i passanti.
@@ -79,7 +85,7 @@ const actors = computed(() => {
     return plaza.players.value.map((p) => ({
       ...p,
       kind: 'actor',
-      look: p.me ? myLook.value : { color: colorFor(p.name), hat: null },
+      look: p.me ? myLook.value : lookOf(p.name, p),
     }))
   }
   return [{ ...me, me: true, name: myName.value, look: myLook.value }, ...crowd]
@@ -389,7 +395,7 @@ const nearShop = computed(
     <Transition name="hint">
       <div v-if="!moved" class="hint">Clicca sulla piazza per camminare · lo shop è a sinistra</div>
     </Transition>
-    <ShopCatalog v-if="shopOpen" :look="myLook" @close="shopOpen = false" />
+    <ShopCatalog v-if="shopOpen" :name="session.data?.user ? myName : null" @close="shopOpen = false" />
     <ChatWindow
       v-if="plaza"
       title="Chat della piazza"

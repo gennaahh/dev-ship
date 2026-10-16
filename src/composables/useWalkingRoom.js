@@ -1,6 +1,7 @@
-import { onUnmounted, ref } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import { createChat } from './chat.js'
 import { useGameRoom } from './useGameRoom.js'
+import { useInventory } from './useInventory.js'
 
 // Quanto in fretta la posizione disegnata insegue quella del server (per secondo).
 const SMOOTHING = 12
@@ -79,6 +80,9 @@ export function useWalkingRoom(name, { clamp, onJoin, onLeave } = {}) {
         walking: Math.abs(dx) + Math.abs(dy) > 0.3,
         me,
         typing: p.typing,
+        // Cosa indossa: id del catalogo, '' = niente (vedi lookOf in avatar.js).
+        hat: p.hat,
+        color: p.color,
         say: bubbles.get(id)?.text ?? '',
       })
     })
@@ -94,6 +98,14 @@ export function useWalkingRoom(name, { clamp, onJoin, onLeave } = {}) {
     going = { ...target, arrive }
     return target
   }
+
+  // Cambiato equipaggiamento (dall'inventario o allo shop): la stanza lo rilegge dal database
+  // e lo fa vedere a tutti.
+  const inventory = useInventory()
+  watch(
+    () => `${inventory.equipment.value.hat}|${inventory.equipment.value.color}`,
+    () => game.room.value?.send('look'),
+  )
 
   onUnmounted(() => cancelAnimationFrame(raf))
 

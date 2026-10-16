@@ -2,6 +2,7 @@ import { Room, ServerError, validate, type Client, type Delayed } from '@colyseu
 import { z } from 'zod'
 import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { ChatInput, cleanText, createMessage, history, RateLimit, TypingInput } from '../chat.ts'
+import { loadLook, refreshLook } from '../db.ts'
 import { BIG_KG, BIG_RESULT_MS, BITE_MS, biteDelay, pointsFor, RESULT_MS, rollCatch, saveCatch } from '../fishing.ts'
 import { clampToLakeside, lakeEntrance, SEAT_SPOTS, SEATS, stepBack, walkLakeside } from '../lake.ts'
 import { PlazaPlayer } from './PlazaState.ts'
@@ -67,6 +68,8 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
       const player = this.state.players.get(client.sessionId)
       if (player) player.typing = typing
     }),
+    // Ha cambiato equipaggiamento: si rilegge dal database.
+    look: (client: FishingClient) => refreshLook(this.clients, this.state.players, client.auth!.userId),
     history: async (client: Client) => {
       client.send('history', await history.list(this.historyKey))
     },
@@ -144,7 +147,11 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
       seat.phase = 'caught'
       seat.weight = kg
       this.broadcast('catch', { seat: Number(key), from: seat.sessionId, name: seat.name, weight: kg, points: pointsFor(kg), big: kg >= BIG_KG })
-      saveCatch(userId, kg)
+      // Il pesce è nell'inventario: lo si dice a tutte le schede del pescatore.
+      saveCatch(userId, kg).then((saved) => {
+        if (!saved) return
+        for (const c of this.clients) if (c.auth?.userId === userId) c.send('inventory')
+      })
     }
     const wait = kg !== null && kg >= BIG_KG ? BIG_RESULT_MS : RESULT_MS
     // Si rilancia: la prossima abboccata si conta da qui.
@@ -180,6 +187,8 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
     this.state.players.set(client.sessionId, player)
     this.targets.set(client.sessionId, to)
     this.users.set(client.sessionId, client.auth!)
+    // Si entra subito; il look arriva appena letto.
+    loadLook(client.auth!.userId).then((look) => Object.assign(player, look))
   }
 
   // Connessione persa senza uscire: la sedia (e l'attesa) resta per qualche secondo.

@@ -57,7 +57,8 @@ const root = ref(null)
 
 const onKey = (e) => {
   // defaultPrevented: Esc già usato da altri (es. per chiudere la finestra del login).
-  if (e.key === 'Escape' && !e.defaultPrevented) emit('leave')
+  // Con una finestra aperta (shop, inventario) Esc chiude lei, anche se il focus non c'è più.
+  if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('dialog[open]')) emit('leave')
 }
 onMounted(() => {
   addEventListener('keydown', onKey)
