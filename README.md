@@ -118,4 +118,10 @@ REDIS_URL=redis://localhost:6379 PORT=2568 PUBLIC_ADDRESS=localhost:2568 bun src
 
 ## Release
 
-Production runs on Railway as three services built from the root of this repository: `web` (frontend served by Caddy, `Dockerfile.web`), `api` (`apps/api/Dockerfile`, applies the database migrations at startup) and `game` (`apps/game/Dockerfile`). Each service is connected to `main` on GitHub, so **every push to `main` is released**. Each one only rebuilds when files it depends on change: the watch patterns are in its config file (`railway.web.json`, `apps/api/railway.json`, `apps/game/railway.json`), whose path is set in the service settings on Railway.
+Production runs on Railway as three services built from the root of this repository: `web` (frontend served by Caddy, `Dockerfile.web`), `api` (`apps/api/Dockerfile`, applies the database migrations at startup) and `game` (`apps/game/Dockerfile`). Each service is connected to `main` on GitHub, so **every push to `main` is released**. Each one only rebuilds when files it depends on change, through the watch paths in its settings on Railway (Settings → Build → Watch Paths), which have to be kept in step with what its Dockerfile copies:
+
+- `web`: `/src/**`, `/index.html`, `/vite.config.js`, `/packages/shared/**`, `/Dockerfile.web`, `/Caddyfile.web`, `/package.json`, `/bun.lock`, `/apps/api/package.json`, `/apps/game/package.json`
+- `api`: `/apps/api/**`, `/packages/shared/**`, `/package.json`, `/bun.lock`, `/apps/game/package.json`
+- `game`: `/apps/game/**`, `/package.json`, `/bun.lock`, `/apps/api/package.json`, `/packages/shared/package.json`
+
+The Dockerfile of each service is set by the `RAILWAY_DOCKERFILE_PATH` variable.
