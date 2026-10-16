@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { armor as armorOf, MATERIALS, RARITY_NAMES, weapon as weaponOf } from '@dev-city/shared/catalog'
+import { coffee as coffeeOf } from '@dev-city/shared/coffee'
 import { BOSS, MAX_WAVES, PLAYER_HP, simulateRun, SOUP_BELOW, SOUP_HEAL, statsOf } from '@dev-city/shared/dungeon'
 import { authClient, displayName } from '../../auth.js'
 import SoupBowl from '../../components/SoupBowl.vue'
@@ -33,7 +34,12 @@ const look = computed(() => (user.value ? lookOf(displayName(user.value), invent
 // L'arma e l'armatura indossate, se si hanno ancora (come le conta l'API), con cosa danno nel dungeon.
 const weapon = computed(() => (inventory.count(inventory.equipment.value.weapon) ? weaponOf(inventory.equipment.value.weapon) : null))
 const armor = computed(() => (inventory.count(inventory.equipment.value.armor) ? armorOf(inventory.equipment.value.armor) : null))
-const stats = computed(() => statsOf({ weapon: weapon.value?.id, armor: armor.value?.id }))
+// Il caffè al ginseng, se lo si è bevuto all'ufficio: vale per la prossima run.
+const ginseng = computed(() => {
+  const c = inventory.coffee.value
+  return c && Date.parse(c.until) > Date.now() && coffeeOf(c.id)?.dungeon ? coffeeOf(c.id) : null
+})
+const stats = computed(() => statsOf({ weapon: weapon.value?.id, armor: armor.value?.id, coffee: ginseng.value?.id }))
 // Quelle della run in corso, fissate all'ingresso: la run di prova si fa senza.
 const runGear = ref({ weapon: null, armor: null })
 
@@ -220,6 +226,7 @@ const barY = (m) => (m.kind === BOSS.id ? -230 : -140)
           </div>
           <p class="gear-stats">⚔ {{ stats.damage[0] }}–{{ stats.damage[1] }} danni · ❤ {{ stats.maxHp }} HP · 🛡 −{{ Math.round(stats.defense * 100) }}% danni</p>
         </div>
+        <p v-if="ginseng" class="note coffee">☕ {{ ginseng.name }}: +{{ ginseng.dungeon.damage }} danni a colpo e +{{ ginseng.dungeon.hp }} HP in questa run (poi è finito).</p>
         <p v-if="!weapon || !armor" class="note">Armi e armature si forgiano col crafting <kbd>R</kbd> (minerali della miniera e materiali del dungeon) e si indossano dalla finestra del personaggio <kbd>C</kbd>.</p>
         <p v-if="!inventory.tickets.value" class="note">Nessun ticket. Al lago, una volta su 15, insieme al pesce sale una bottiglia con un ticket dentro.</p>
         <p v-else-if="!inventory.soups.value" class="note">Niente zuppe: la run sarà breve. Col crafting <kbd>R</kbd> 3 pesci diventano una zuppa, che sotto i {{ SOUP_BELOW }} HP ti ridà {{ SOUP_HEAL }} HP.</p>
@@ -553,6 +560,10 @@ h2 {
 }
 .note {
   color: #6b6890;
+}
+.note.coffee {
+  color: #b3541e;
+  font-weight: 600;
 }
 .error {
   color: #c0262d;

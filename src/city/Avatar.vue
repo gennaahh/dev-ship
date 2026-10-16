@@ -12,6 +12,8 @@ const props = defineProps({
   walking: { type: Boolean, default: false },
   name: { type: String, default: '' },
   me: { type: Boolean, default: false },
+  // Visto di spalle (es. seduti al tavolo dell'ufficio, dal lato di chi guarda): niente faccia.
+  back: { type: Boolean, default: false },
 })
 
 const color = computed(() => props.look.color ?? DEFAULT_LOOK.color)
@@ -34,20 +36,22 @@ const shade = computed(() => ({ fill: `color-mix(in srgb, ${color.value} 72%, #2
         <ellipse class="arm right" cx="32" cy="-40" rx="7" ry="13" :style="shade" transform="rotate(-18 32 -40)" />
         <!-- Corpo a caramella gommosa -->
         <path d="M -32 -22 C -34 -62 -24 -96 0 -96 C 24 -96 34 -62 32 -22 C 31 -10 18 -6 0 -6 C -18 -6 -31 -10 -32 -22 Z" :fill="color" />
-        <ellipse cx="2" cy="-30" rx="19" ry="17" fill="#fff8e6" stroke="none" opacity="0.9" />
+        <ellipse v-if="!back" cx="2" cy="-30" rx="19" ry="17" fill="#fff8e6" stroke="none" opacity="0.9" />
         <ellipse cx="-15" cy="-76" rx="5" ry="9" fill="#fff" stroke="none" opacity="0.45" transform="rotate(24 -15 -76)" />
         <!-- Faccia, un po' spostata verso dove guarda -->
-        <g class="eyes">
-          <ellipse cx="-7" cy="-62" rx="6.5" ry="8.5" fill="#2d2a4a" stroke="none" />
-          <ellipse cx="15" cy="-62" rx="6.5" ry="8.5" fill="#2d2a4a" stroke="none" />
-          <circle cx="-5" cy="-65.5" r="2.6" fill="#fff" stroke="none" />
-          <circle cx="17" cy="-65.5" r="2.6" fill="#fff" stroke="none" />
-          <circle cx="-8.5" cy="-58.5" r="1.3" fill="#fff" stroke="none" />
-          <circle cx="13.5" cy="-58.5" r="1.3" fill="#fff" stroke="none" />
-        </g>
-        <ellipse cx="-17" cy="-49" rx="6" ry="3.5" fill="#ff8fa3" stroke="none" opacity="0.75" />
-        <ellipse cx="25" cy="-49" rx="5" ry="3.5" fill="#ff8fa3" stroke="none" opacity="0.75" />
-        <path d="M 0 -52 q 4 4 8 0" fill="none" stroke-width="3" />
+        <template v-if="!back">
+          <g class="eyes">
+            <ellipse cx="-7" cy="-62" rx="6.5" ry="8.5" fill="#2d2a4a" stroke="none" />
+            <ellipse cx="15" cy="-62" rx="6.5" ry="8.5" fill="#2d2a4a" stroke="none" />
+            <circle cx="-5" cy="-65.5" r="2.6" fill="#fff" stroke="none" />
+            <circle cx="17" cy="-65.5" r="2.6" fill="#fff" stroke="none" />
+            <circle cx="-8.5" cy="-58.5" r="1.3" fill="#fff" stroke="none" />
+            <circle cx="13.5" cy="-58.5" r="1.3" fill="#fff" stroke="none" />
+          </g>
+          <ellipse cx="-17" cy="-49" rx="6" ry="3.5" fill="#ff8fa3" stroke="none" opacity="0.75" />
+          <ellipse cx="25" cy="-49" rx="5" ry="3.5" fill="#ff8fa3" stroke="none" opacity="0.75" />
+          <path d="M 0 -52 q 4 4 8 0" fill="none" stroke-width="3" />
+        </template>
 
         <!-- Cappelli -->
         <g v-if="look.hat === 'beanie'">

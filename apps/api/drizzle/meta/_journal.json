@@ -50,6 +50,13 @@
       "when": 1792174262026,
       "tag": "0006_office",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792176272394,
+      "tag": "0007_coffee",
+      "breakpoints": true
     }
   ]
 }

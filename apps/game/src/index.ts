@@ -5,6 +5,7 @@ import { RedisPresence } from '@colyseus/redis-presence'
 import { ChatRoom } from './rooms/ChatRoom.ts'
 import { FishingRoom } from './rooms/FishingRoom.ts'
 import { MineRoom } from './rooms/MineRoom.ts'
+import { OfficeRoom } from './rooms/OfficeRoom.ts'
 import { PlazaRoom } from './rooms/PlazaRoom.ts'
 
 const port = Number(process.env.PORT ?? 2567)
@@ -23,6 +24,7 @@ const server = defineServer({
     plaza: defineRoom(PlazaRoom),
     fishing: defineRoom(FishingRoom),
     mine: defineRoom(MineRoom),
+    office: defineRoom(OfficeRoom),
     // Una stanza per canale: chi chiede lo stesso canale finisce nella stessa stanza.
     chat: defineRoom(ChatRoom).filterBy(['channel']),
   },

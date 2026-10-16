@@ -1,6 +1,7 @@
 import { SQL } from 'bun'
 import type { Client } from '@colyseus/core'
 import type { ToolSlot } from '@dev-city/shared/catalog'
+import { coffee } from '@dev-city/shared/coffee'
 import type { MapSchema } from '@colyseus/schema'
 import type { PlayerAuth } from './auth.ts'
 import type { PlazaPlayer } from './rooms/PlazaState.ts'
@@ -34,6 +35,25 @@ export async function loadTool(userId: string, slot: ToolSlot) {
     console.error('Attrezzo non letto:', e)
     return ''
   }
+}
+
+// Il caffè in circolo (player_coffee, lo compra l'API all'ufficio): id del catalogo dei caffè
+// (packages/shared/src/coffee.ts) e fino a quando, in ms; null = niente o finito.
+export async function loadCoffee(userId: string) {
+  try {
+    const [row] = await sql`select coffee_id, until from player_coffee where user_id = ${userId} and until > now()`
+    return row ? { id: row.coffee_id as string, until: new Date(row.until).getTime() } : null
+  } catch (e) {
+    console.error('Caffè non letto:', e)
+    return null
+  }
+}
+
+// La spinta di una canna o di un piccone (null: quelli di sempre) più quella del caffè in
+// circolo, letto adesso: un caffè appena bevuto conta dalla prossima attesa.
+export async function withCoffee(userId: string, t: { speed: number; luck: number } | null) {
+  const c = coffee((await loadCoffee(userId))?.id)
+  return { speed: (t?.speed ?? 0) + (c?.speed ?? 0), luck: (t?.luck ?? 0) + (c?.luck ?? 0) }
 }
 
 // Rilegge il look di un giocatore e lo mette su tutti i suoi personaggi nella stanza (uno per

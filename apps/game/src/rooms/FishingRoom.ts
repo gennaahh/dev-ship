@@ -3,7 +3,7 @@ import { tool } from '@dev-city/shared/catalog'
 import { z } from 'zod'
 import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { ChatInput, cleanText, createMessage, history, RateLimit, TypingInput } from '../chat.ts'
-import { loadLook, loadTool, refreshLook } from '../db.ts'
+import { loadLook, loadTool, refreshLook, withCoffee } from '../db.ts'
 import { BIG_KG, BIG_RESULT_MS, BITE_MS, biteDelay, pointsFor, RESULT_MS, rollBottle, rollCatch, saveCatch } from '../fishing.ts'
 import { clampToLakeside, lakeEntrance, SEAT_SPOTS, SEATS, stepBack, walkLakeside } from '../lake.ts'
 import { TradeDesk } from '../trade.ts'
@@ -22,7 +22,8 @@ type FishingClient = Client<{ auth: PlayerAuth }>
 // su una delle dieci sedie camminandoci. Una persona per sedia: chi ci arriva per primo.
 // Seduti si aspetta: dopo 10-20 minuti abbocca, e 3 volte su 4 il pesce resta all'amo. Una
 // volta su 15 col pesce sale anche una bottiglia, col ticket per il dungeon. Con una canna del
-// crafting in mano si aspetta di meno e i pesci speciali sono più frequenti.
+// crafting in mano si aspetta di meno e i pesci speciali sono più frequenti, e così col caffè
+// bevuto all'ufficio.
 // Le sedie sono le stesse per tutti, quindi la stanza è una sola.
 export class FishingRoom extends Room<{ state: FishingState; client: FishingClient }> {
   maxClients = 100
@@ -132,16 +133,19 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
     this.state.seats.set(key, s)
     this.seatOfUser.set(auth.userId, key)
     // La prima attesa parte quando si sa che canna ha in mano.
-    loadTool(auth.userId, 'rod').then((t) => {
+    loadTool(auth.userId, 'rod').then(async (t) => {
       if (this.state.seats.get(key) !== s) return
       s.tool = t
-      this.schedule(key, biteDelay(this.rod(s).speed), () => this.bite(key, auth.userId))
+      const boost = await this.boost(s, auth.userId)
+      if (this.state.seats.get(key) !== s) return
+      this.schedule(key, biteDelay(boost.speed), () => this.bite(key, auth.userId))
     })
   }
 
-  // La canna di chi è seduto: senza, quella di sempre.
-  private rod(seat: FishingSeat) {
-    return tool(seat.tool) ?? { speed: 0, luck: 0 }
+  // La canna di chi è seduto (senza, quella di sempre) più il caffè in circolo, riletto a ogni
+  // attesa: un caffè bevuto all'ufficio conta dalla prossima.
+  private boost(seat: FishingSeat, userId: string) {
+    return withCoffee(userId, tool(seat.tool))
   }
 
   // Look e canna rilette dal database, dopo un cambio di equipaggiamento o uno scambio. La canna
@@ -165,10 +169,12 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
     this.schedule(key, BITE_MS, () => this.resolve(key, userId))
   }
 
-  private resolve(key: string, userId: string) {
+  private async resolve(key: string, userId: string) {
     const seat = this.state.seats.get(key)
     if (!seat) return
-    const kg = rollCatch(this.rod(seat).luck)
+    const boost = await this.boost(seat, userId)
+    if (this.state.seats.get(key) !== seat) return
+    const kg = rollCatch(boost.luck)
     if (kg === null) {
       seat.phase = 'escaped'
     } else {
@@ -189,7 +195,7 @@ export class FishingRoom extends Room<{ state: FishingState; client: FishingClie
       const s = this.state.seats.get(key)
       if (!s) return
       s.phase = 'waiting'
-      this.schedule(key, Math.max(1000, biteDelay(this.rod(s).speed) - wait), () => this.bite(key, userId))
+      this.schedule(key, Math.max(1000, biteDelay(boost.speed) - wait), () => this.bite(key, userId))
     })
   }
 

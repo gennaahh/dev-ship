@@ -1,4 +1,5 @@
 import { armor, MATERIALS, weapon } from './catalog.ts'
+import { coffee } from './coffee.ts'
 
 // Il dungeon: una run automatica. Si entra con un ticket (si ripesca in una bottiglia al lago)
 // e 100 HP (di più con l'armatura), e arrivano ondate di bug-mostri sempre più forti; il
@@ -84,11 +85,16 @@ export type RunEvent =
   | { t: number; type: 'end'; cleared: boolean }
 
 // Cosa indossa il giocatore nella run: id del catalogo, null = niente (spada di legno, senza armatura).
-export type Loadout = { weapon?: string | null; armor?: string | null }
+// coffee: il caffè bevuto all'ufficio (packages/shared/src/coffee.ts), se è uno per il dungeon.
+export type Loadout = { weapon?: string | null; armor?: string | null; coffee?: string | null }
 // Le statistiche che ne vengono: danni di ogni colpo, vita massima e quota dei danni che l'armatura ferma.
+// Il caffè per il dungeon aggiunge danni a ogni colpo e vita.
 export function statsOf(loadout: Loadout = {}) {
   const a = armor(loadout.armor)
-  return { damage: weapon(loadout.weapon)?.damage ?? BASE_DAMAGE, maxHp: PLAYER_HP + (a?.hp ?? 0), defense: a?.defense ?? 0 }
+  const boost = coffee(loadout.coffee)?.dungeon ?? { damage: 0, hp: 0 }
+  const [min, max] = weapon(loadout.weapon)?.damage ?? BASE_DAMAGE
+  const damage = [min + boost.damage, max + boost.damage] as const
+  return { damage, maxHp: PLAYER_HP + (a?.hp ?? 0) + boost.hp, defense: a?.defense ?? 0 }
 }
 
 export type RunResult = {

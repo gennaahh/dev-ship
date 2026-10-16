@@ -123,6 +123,8 @@ function createStore() {
 
   return {
     ready: computed(() => data.value !== null),
+    // Il caffè in circolo, bevuto alla macchinetta dell'ufficio: { id, until } o null.
+    coffee: computed(() => data.value?.coffee ?? null),
     gold: computed(() => data.value?.gold ?? 0),
     equipment: computed(() => data.value?.equipment ?? NO_EQUIPMENT),
     fish,
@@ -148,6 +150,8 @@ function createStore() {
     buy: (itemId) => act('shop/buy', { itemId }),
     equip: (slot, itemId) => act('inventory/equip', { slot, itemId }),
     craft: (recipeId) => act('inventory/craft', { recipeId }),
+    // Un caffè alla macchinetta dell'ufficio (packages/shared/src/coffee.ts).
+    drinkCoffee: (coffeeId) => act('office/coffee', { coffeeId }),
     runDungeon,
   }
 }

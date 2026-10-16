@@ -1,18 +1,28 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { authClient, displayName } from '../auth.js'
 import Avatar from '../city/Avatar.vue'
 import { lookOf } from '../city/avatar.js'
+import CoffeeCup from '../city/office/CoffeeCup.vue'
+import { activeCoffee, leftText } from '../city/office/coffee.js'
 import { useInventory } from '../composables/useInventory.js'
 import KeyCap from './KeyCap.vue'
 
-// In alto a destra, da loggati: il proprio personaggio, il nome e le monete d'oro.
-// Un clic (o il tasto C) apre la finestra del personaggio. La posizione la decide App.vue.
+// In alto a destra, da loggati: il proprio personaggio, il nome e le monete d'oro, e la tazzina
+// quando si ha un caffè in circolo (bevuto all'ufficio). Un clic (o il tasto C) apre la finestra
+// del personaggio. La posizione la decide App.vue.
 const session = authClient.useSession()
 const user = computed(() => session.value.data?.user ?? null)
 const name = computed(() => (user.value ? displayName(user.value) : ''))
 const inventory = useInventory()
 const look = computed(() => lookOf(name.value, inventory.equipment.value))
+
+// Il caffè finisce da solo: now lo fa sparire.
+const now = ref(Date.now())
+let tick = 0
+onMounted(() => (tick = setInterval(() => (now.value = Date.now()), 30_000)))
+onUnmounted(() => clearInterval(tick))
+const cup = computed(() => activeCoffee(inventory.coffee.value, now.value))
 </script>
 
 <template>
@@ -25,6 +35,9 @@ const look = computed(() => lookOf(name.value, inventory.equipment.value))
     <span class="info">
       <span class="name">{{ name }}</span>
       <span class="gold">🪙 {{ inventory.ready.value ? inventory.gold.value : '…' }}</span>
+    </span>
+    <span v-if="cup" :key="cup.id" class="cup" :title="`${cup.name}: ancora ${leftText(cup.left)}`">
+      <svg viewBox="-30 -50 60 54" aria-hidden="true"><CoffeeCup :id="cup.id" :steam="false" /></svg>
     </span>
     <KeyCap letter="C" />
   </button>
@@ -82,6 +95,29 @@ const look = computed(() => lookOf(name.value, inventory.equipment.value))
   color: #9c6332;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
+}
+/* La tazzina del caffè in circolo, sull'angolo in alto a sinistra. */
+.cup {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #2d2a4a;
+  border-radius: 50%;
+  background: #ffe2c8;
+  animation: cup 0.4s cubic-bezier(0.2, 0.7, 0.3, 1.4);
+}
+.cup svg {
+  width: 22px;
+  height: 22px;
+}
+@keyframes cup {
+  from {
+    scale: 0.4;
+  }
 }
 /* Sui telefoni basta il personaggio: nome e monete si vedono nelle finestre. */
 @media (max-width: 720px) {

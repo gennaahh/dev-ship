@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { verifyRoomToken, type PlayerAuth } from '../auth.ts'
 import { caveEntrance, clampToCave, SPOT_SPOTS, SPOTS, stepBack, walkCave } from '../cave.ts'
 import { ChatInput, cleanText, createMessage, history, RateLimit, TypingInput } from '../chat.ts'
-import { loadLook, loadTool, refreshLook } from '../db.ts'
+import { loadLook, loadTool, refreshLook, withCoffee } from '../db.ts'
 import { findDelay, saveFind, stoneDelay } from '../mine.ts'
 import { TradeDesk } from '../trade.ts'
 import { PlazaPlayer } from './PlazaState.ts'
@@ -23,7 +23,7 @@ type MineClient = Client<{ auth: PlayerAuth }>
 // otto filoni camminandoci. Una persona per filone: chi ci arriva per primo. Si scava da soli:
 // ogni 4-6 minuti si stacca una pietra, ogni 15-25 si trova un minerale o una gemma (le regole
 // in packages/shared/src/mine.ts). Con un piccone del crafting in mano si aspetta di meno e le
-// scoperte rare sono più frequenti. Come la zona di pesca (FishingRoom), la stanza è una sola.
+// scoperte rare sono più frequenti, e così col caffè bevuto all'ufficio. Come la zona di pesca (FishingRoom), la stanza è una sola.
 export class MineRoom extends Room<{ state: MineState; client: MineClient }> {
   maxClients = 100
   maxMessagesPerSecond = 20
@@ -134,17 +134,20 @@ export class MineRoom extends Room<{ state: MineState; client: MineClient }> {
     this.state.spots.set(key, s)
     this.spotOfUser.set(auth.userId, key)
     // Le prime attese partono quando si sa che piccone ha in mano.
-    loadTool(auth.userId, 'pickaxe').then((t) => {
+    loadTool(auth.userId, 'pickaxe').then(async (t) => {
       if (this.state.spots.get(key) !== s) return
       s.tool = t
-      this.schedule(this.stoneTimers, key, stoneDelay(this.pickaxe(s).speed), () => this.stone(key, auth.userId))
-      this.schedule(this.findTimers, key, findDelay(this.pickaxe(s).speed), () => this.find(key, auth.userId))
+      const boost = await this.boost(s, auth.userId)
+      if (this.state.spots.get(key) !== s) return
+      this.schedule(this.stoneTimers, key, stoneDelay(boost.speed), () => this.stone(key, auth.userId))
+      this.schedule(this.findTimers, key, findDelay(boost.speed), () => this.find(key, auth.userId))
     })
   }
 
-  // Il piccone di chi scava: senza, quello di sempre.
-  private pickaxe(spot: MineSpot) {
-    return tool(spot.tool) ?? { speed: 0, luck: 0 }
+  // Il piccone di chi scava (senza, quello di sempre) più il caffè in circolo, riletto a ogni
+  // attesa: un caffè bevuto all'ufficio conta dalla prossima.
+  private boost(spot: MineSpot, userId: string) {
+    return withCoffee(userId, tool(spot.tool))
   }
 
   // Look e piccone riletti dal database, dopo un cambio di equipaggiamento o uno scambio. Il
@@ -174,13 +177,18 @@ export class MineRoom extends Room<{ state: MineState; client: MineClient }> {
     if (!spot) return
     spot.stones++
     this.save(userId, STONE)
-    this.schedule(this.stoneTimers, key, stoneDelay(this.pickaxe(spot).speed), () => this.stone(key, userId))
+    this.boost(spot, userId).then((boost) => {
+      if (this.state.spots.get(key) !== spot) return
+      this.schedule(this.stoneTimers, key, stoneDelay(boost.speed), () => this.stone(key, userId))
+    })
   }
 
-  private find(key: string, userId: string) {
+  private async find(key: string, userId: string) {
     const spot = this.state.spots.get(key)
     if (!spot) return
-    const item = rollMineral(Math.random, this.pickaxe(spot).luck)
+    const boost = await this.boost(spot, userId)
+    if (this.state.spots.get(key) !== spot) return
+    const item = rollMineral(Math.random, boost.luck)
     const big = isBigFind(item)
     spot.phase = 'found'
     spot.found = item
@@ -193,7 +201,7 @@ export class MineRoom extends Room<{ state: MineState; client: MineClient }> {
       const s = this.state.spots.get(key)
       if (!s) return
       s.phase = 'digging'
-      this.schedule(this.findTimers, key, Math.max(1000, findDelay(this.pickaxe(s).speed) - shown), () => this.find(key, userId))
+      this.schedule(this.findTimers, key, Math.max(1000, findDelay(boost.speed) - shown), () => this.find(key, userId))
     })
   }
 

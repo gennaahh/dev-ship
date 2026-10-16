@@ -108,10 +108,11 @@ export function useWalkingRoom(name, { clamp, onJoin, onLeave } = {}) {
   }
 
   // Cambiato equipaggiamento (dall'inventario o allo shop): la stanza lo rilegge dal database
-  // e lo fa vedere a tutti. Anche canna e piccone: al lago e in miniera contano.
+  // e lo fa vedere a tutti. Anche canna e piccone: al lago e in miniera contano. E il caffè:
+  // all'ufficio la tazza sul tavolo.
   const inventory = useInventory()
   watch(
-    () => ['hat', 'color', 'rod', 'pickaxe'].map((slot) => inventory.equipment.value[slot]).join('|'),
+    () => [...['hat', 'color', 'rod', 'pickaxe'].map((slot) => inventory.equipment.value[slot]), inventory.coffee.value?.id, inventory.coffee.value?.until].join('|'),
     () => game.room.value?.send('look'),
   )
 

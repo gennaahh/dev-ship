@@ -1,10 +1,13 @@
 import { FISH, itemName } from '@dev-city/shared/catalog'
+import { coffee } from '@dev-city/shared/coffee'
 import { BOARD, CANCEL_COOLDOWN_MS, generateMission } from '@dev-city/shared/office'
 import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { db } from './db/index.ts'
-import { goldLedger, officeMission, playerItem, user } from './db/schema.ts'
-import { addCount, countOf, InventoryError, type Tx } from './inventory.ts'
+import { goldLedger, officeMission, playerCoffee, playerItem, user } from './db/schema.ts'
+import { addCount, countOf, goldOf, InventoryError, inventoryOf, type Tx } from './inventory.ts'
 
+// L'ufficio: la macchinetta del caffè (in fondo) e la bacheca delle missioni.
+//
 // La bacheca delle missioni dell'ufficio (regole in packages/shared/src/office.ts): la bacheca la
 // vedono tutti, prendere, annullare e completare una missione solo da loggati. Le azioni
 // restituiscono la propria situazione e la bacheca aggiornate, per ridisegnare tutto con una
@@ -155,4 +158,22 @@ export async function completeMission(userId: string) {
     await tx.update(officeMission).set({ status: 'done', finishedAt: sql`now()` }).where(eq(officeMission.id, current.id))
   })
   return withBoard(userId)
+}
+
+// Un caffè alla macchinetta (packages/shared/src/coffee.ts): si paga e vale da adesso per i suoi
+// minuti, al posto di quello di prima. Restituisce l'inventario, col caffè in circolo.
+export async function drinkCoffee(userId: string, coffeeId: string) {
+  const c = coffee(coffeeId)
+  if (!c) throw new InventoryError(404, 'La macchinetta non fa questo caffè.')
+  await db.transaction(async (tx) => {
+    await lock(tx, userId)
+    if ((await goldOf(tx, userId)) < c.price) throw new InventoryError(402, 'Non hai abbastanza monete.')
+    await tx.insert(goldLedger).values({ userId, amount: -c.price, reason: 'coffee', itemId: c.id })
+    const until = sql`now() + ${c.minutes} * interval '1 minute'`
+    await tx
+      .insert(playerCoffee)
+      .values({ userId, coffeeId: c.id, until })
+      .onConflictDoUpdate({ target: playerCoffee.userId, set: { coffeeId: c.id, until } })
+  })
+  return inventoryOf(userId)
 }

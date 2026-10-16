@@ -8,7 +8,7 @@ import { env, isAllowedOrigin } from './env.ts'
 import { fishingLeaderboard } from './fishing.ts'
 import { buy, craft, equip, InventoryError, inventoryOf, runDungeon, sellFish, sellItems } from './inventory.ts'
 import { mineBoard } from './mine.ts'
-import { cancelMission, completeMission, missionOf, officeBoard, takeMission } from './office.ts'
+import { cancelMission, completeMission, drinkCoffee, missionOf, officeBoard, takeMission } from './office.ts'
 
 const app = new Hono<{ Variables: { userId: string } }>()
 
@@ -47,11 +47,13 @@ const BuyInput = z.object({ itemId: z.string().max(40) })
 const EquipInput = z.object({ slot: z.enum(['hat', 'color', 'weapon', 'armor', 'rod', 'pickaxe']), itemId: z.string().max(40).nullable() })
 const CraftInput = z.object({ recipeId: z.string().max(40) })
 const TakeMissionInput = z.object({ id: z.number().int().positive() })
+const CoffeeInput = z.object({ coffeeId: z.string().max(40) })
 
 app.use('/api/inventory/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
 app.use('/api/shop/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
 app.use('/api/dungeon/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
 app.use('/api/office/mission/*', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
+app.use('/api/office/coffee', csrf({ origin: (origin) => isAllowedOrigin(origin) }))
 const signedIn = async (c: Context, next: () => Promise<void>) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers })
   if (!session) return c.json({ error: 'Serve il login.' }, 401)
@@ -64,6 +66,7 @@ app.use('/api/shop/*', signedIn)
 app.use('/api/dungeon/*', signedIn)
 app.use('/api/office/mission', signedIn)
 app.use('/api/office/mission/*', signedIn)
+app.use('/api/office/coffee', signedIn)
 
 // Il corpo della richiesta, validato: se non va bene risponde 400 e restituisce null.
 async function body<T>(c: Context, schema: z.ZodType<T>) {
@@ -112,6 +115,11 @@ app.post('/api/office/mission/take', async (c) => {
 })
 app.post('/api/office/mission/cancel', async (c) => c.json(await cancelMission(c.get('userId'))))
 app.post('/api/office/mission/complete', async (c) => c.json(await completeMission(c.get('userId'))))
+// Un caffè alla macchinetta dell'ufficio: la risposta è l'inventario, col caffè in circolo.
+app.post('/api/office/coffee', async (c) => {
+  const input = await body(c, CoffeeInput)
+  return input ? c.json(await drinkCoffee(c.get('userId'), input.coffeeId)) : invalid(c)
+})
 
 console.log(`API in ascolto su http://localhost:${env.PORT}`)
 

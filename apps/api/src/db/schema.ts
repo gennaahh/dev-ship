@@ -53,8 +53,8 @@ export const playerItem = pgTable(
 // Le monete d'oro: ogni movimento è una riga, il saldo è la somma. Le righe non si cambiano
 // né si cancellano. reason: 'sell' (vendita di un pesce o di quello che si trova in miniera),
 // 'buy' (acquisto allo shop), 'dungeon' (monete raccolte in una run, itemId 'dungeon_ticket'),
-// 'trade' (scambio tra giocatori, itemId 'gold') o 'mission' (premio di una missione dell'ufficio,
-// itemId 'mission').
+// 'trade' (scambio tra giocatori, itemId 'gold'), 'mission' (premio di una missione dell'ufficio,
+// itemId 'mission') o 'coffee' (un caffè alla macchinetta dell'ufficio, itemId il caffè).
 export const goldLedger = pgTable(
   'gold_ledger',
   {
@@ -132,3 +132,15 @@ export const officeMission = pgTable(
     index('office_mission_status_idx').on(table.status, table.finishedAt),
   ],
 )
+
+// Il caffè che un giocatore ha in circolo (packages/shared/src/coffee.ts): uno alla volta, berne un
+// altro lo sostituisce. Vale fino a until; quelli per il dungeon spariscono alla prima run.
+// Lo scrive l'API, lo leggono anche le stanze del game server (lago e miniera, per i tempi e la
+// fortuna, e l'ufficio, per la tazzina sul tavolo).
+export const playerCoffee = pgTable('player_coffee', {
+  userId: text()
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  coffeeId: text().notNull(),
+  until: timestamp({ withTimezone: true }).notNull(),
+})

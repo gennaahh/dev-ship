@@ -8,6 +8,10 @@ export const CHANGELOG = [
   {
     date: '2026-10-16',
     items: [
+      { tag: 'new', backend: true, text: 'L\'ufficio è rifatto: si entra, si cammina e si chiacchiera come in piazza, e in mezzo c\'è il tavolo delle riunioni con 8 posti. Clic su una sedia libera per sedersi, uno a testa. La bacheca delle missioni ora è appesa in fondo a sinistra: un clic e ci si avvicina per leggerla.' },
+      { tag: 'new', backend: true, text: 'In fondo a destra, su un tavolino, la macchinetta del caffè, con 6 caffè: espresso (6 monete, 1 ora, −10% di attesa al lago e in miniera), americano (12, 4 ore, −5%), cappuccino (6, 1 ora, +40% pesci speciali e scoperte rare), marocchino (12, 1 ora, tutti e due), ginseng (20, per la prossima run nel dungeon: +3 danni a colpo e +20 HP, e il menu fa vedere cosa cambia con la propria arma) e deca (1 moneta, non fa niente ma fa compagnia). Un caffè alla volta, e si somma a canne e picconi.' },
+      { tag: 'new', backend: true, text: 'Chi ha un caffè in circolo ha la tazzina sul proprio personaggio in alto a destra e, seduto al tavolo dell\'ufficio, la tazza fumante davanti.' },
+      { tag: 'new', text: 'L\'ufficio nuovo si vede anche nella demo, con la squadra al tavolo e il caffè.' },
       { tag: 'new', backend: true, text: 'L\'ufficio è aperto! Sulla bacheca ci sono sempre 4 missioni (due facili, una media e una difficile), col premio già scritto sul foglietto: chi chiede pesci, chi zuppe, minerali, gemme o materiali del dungeon. Appena qualcuno ne prende una ne esce un\'altra, e la bacheca mostra anche chi ci sta lavorando e le ultime fatte. Il premio rende più che vendere, e le difficili una volta su due danno anche un ticket del dungeon.' },
       { tag: 'new', backend: true, text: 'Una missione alla volta: si guarda dalla cartellina in alto a destra (o col tasto M), che si spunta quando nell\'inventario c\'è tutto. Da lì "Completa" consegna e riscuote il premio; "Annulla" la butta, ma per un\'ora non se ne prendono altre.' },
       { tag: 'new', text: 'In ufficio la kanban è diventata la bacheca delle missioni: senza login si guarda soltanto.' },

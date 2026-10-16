@@ -4,8 +4,10 @@
   "type": "module",
   "exports": {
     "./catalog": "./src/catalog.ts",
+    "./coffee": "./src/coffee.ts",
     "./dungeon": "./src/dungeon.ts",
     "./mine": "./src/mine.ts",
-    "./office": "./src/office.ts"
+    "./office": "./src/office.ts",
+    "./office-floor": "./src/office-floor.ts"
   }
 }

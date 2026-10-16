@@ -1,8 +1,9 @@
 import { DUNGEON_TICKET, FISH, FISH_SOUP, fishPrice, gear, itemName, recipe, sellPrice, shopItem, type GearSlot, type Slot } from '@dev-city/shared/catalog'
+import { coffee } from '@dev-city/shared/coffee'
 import { simulateRun } from '@dev-city/shared/dungeon'
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { db } from './db/index.ts'
-import { goldLedger, playerEquipment, playerItem, user } from './db/schema.ts'
+import { goldLedger, playerCoffee, playerEquipment, playerItem, user } from './db/schema.ts'
 
 // Inventario, monete d'oro ed equipaggiamento dei giocatori. Ogni operazione restituisce
 // l'inventario aggiornato, così lo schermo si ridisegna con una risposta sola.
@@ -20,7 +21,7 @@ export class InventoryError extends Error {
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
-const goldOf = async (tx: Tx | typeof db, userId: string) => {
+export const goldOf = async (tx: Tx | typeof db, userId: string) => {
   const [row] = await tx
     .select({ gold: sql<number>`coalesce(sum(${goldLedger.amount}), 0)::int` })
     .from(goldLedger)
@@ -28,8 +29,17 @@ const goldOf = async (tx: Tx | typeof db, userId: string) => {
   return row.gold
 }
 
+// Il caffè in circolo (coffee.ts), se c'è ancora: { id, until }, altrimenti null.
+export async function coffeeOf(tx: Tx | typeof db, userId: string) {
+  const [row] = await tx
+    .select({ id: playerCoffee.coffeeId, until: playerCoffee.until })
+    .from(playerCoffee)
+    .where(and(eq(playerCoffee.userId, userId), gt(playerCoffee.until, sql`now()`)))
+  return row && coffee(row.id) ? row : null
+}
+
 export async function inventoryOf(userId: string) {
-  const [gold, items, [equipment]] = await Promise.all([
+  const [gold, items, [equipment], active] = await Promise.all([
     goldOf(db, userId),
     db
       .select({ id: playerItem.id, itemId: playerItem.itemId, weightG: playerItem.weightG, quantity: playerItem.quantity, acquiredAt: playerItem.acquiredAt })
@@ -47,9 +57,11 @@ export async function inventoryOf(userId: string) {
       })
       .from(playerEquipment)
       .where(eq(playerEquipment.userId, userId)),
+    coffeeOf(db, userId),
   ])
   return {
     gold,
+    coffee: active,
     items: items.map(({ weightG, ...item }) => ({
       ...item,
       weightKg: weightG === null ? null : weightG / 1000,
@@ -185,7 +197,8 @@ export async function craft(userId: string, recipeId: string) {
 }
 
 // Una run nel dungeon: usa un ticket, la simula tutta qui (packages/shared/src/dungeon.ts) con
-// l'arma e l'armatura indossate e salva subito cosa ne esce: zuppe bevute, monete e materiali.
+// l'arma e l'armatura indossate (e il caffè al ginseng, se lo si è bevuto) e salva subito cosa
+// ne esce: zuppe bevute, monete e materiali.
 // Il giocatore poi la guarda (run.events), ma l'esito è già deciso e nell'inventario.
 export async function runDungeon(userId: string) {
   const run = await db.transaction(async (tx) => {
@@ -197,7 +210,11 @@ export async function runDungeon(userId: string) {
       weapon: worn?.weapon && (await countOf(tx, userId, worn.weapon)) > 0 ? worn.weapon : null,
       armor: worn?.armor && (await countOf(tx, userId, worn.armor)) > 0 ? worn.armor : null,
     }
-    const run = simulateRun(await countOf(tx, userId, FISH_SOUP), loadout)
+    // Un caffè per il dungeon (il ginseng) vale per questa run e poi è finito.
+    const active = await coffeeOf(tx, userId)
+    const boost = coffee(active?.id)?.dungeon ? active!.id : null
+    if (boost) await tx.delete(playerCoffee).where(eq(playerCoffee.userId, userId))
+    const run = simulateRun(await countOf(tx, userId, FISH_SOUP), { ...loadout, coffee: boost })
     await addCount(tx, userId, DUNGEON_TICKET, -1)
     await addCount(tx, userId, FISH_SOUP, -run.soupsUsed)
     for (const [itemId, n] of Object.entries(run.materials)) await addCount(tx, userId, itemId, n)
